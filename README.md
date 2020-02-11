@@ -3,6 +3,48 @@
 * Instalação Kubernetes:
 
 ```
+# vim /etc/modules-load.d/k8s.conf
+br_netfilter
+ip_vs_rr
+ip_vs_wrr
+ip_vs_sh
+nf_conntrack_ipv4
+ip_vs
+
+
+# apt-get update -y && apt-get upgrade -y
+
+# curl -fsSL https://get.docker.com | bash
+
+# apt-get update && apt-get install -y apt-transport-https
+
+# curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+
+# echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+
+# apt-get update
+
+# apt-get install -y kubelet kubeadm kubectl
+
+# swapoff -a
+
+# vim /etc/fstab
+
+# kubeadm config images pull
+
+# kubeadm init
+
+# mkdir -p $HOME/.kube
+
+# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+# kubectl get pods -n kube-system
+
+# kubeadm join --token 39c341.a3bc3c4dd49758d5 IP_DO_MASTER:6443 --discovery-token-ca-cert-hash sha256:37092
 
 ```
 ---
@@ -635,11 +677,34 @@ nginx      1/1     1            1           26m
 ---
 ---
 
-# Criando um service
+# Criando um service, para acessar interno
 
 ```
 vagrant@k8s-master:~$ kubectl expose deployment my-nginx
 service/my-nginx exposed
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   6d4h
+my-nginx     ClusterIP   10.107.62.74   <none>        80/TCP    2m45s
+
+```
+---
+---
+
+# Criando um NodePort, para acessar externo
+
+```
+vagrant@k8s-master:~$ kubectl delete service my-nginx
+service "my-nginx" deleted
+
+vagrant@k8s-master:~$ kubectl expose deployment my-nginx --type=NodePort
+service/my-nginx exposed
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        6d4h
+my-nginx     NodePort    10.97.65.173   <none>        80:31964/TCP   12s
 
 ```
 
