@@ -707,8 +707,126 @@ kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        6d4h
 my-nginx     NodePort    10.97.65.173   <none>        80:31964/TCP   12s
 
 ```
+---
+---
+
+# Criando primeiro service
+
+`Base`
+
+```
+vagrant@k8s-master:~$ kubectl get services -o yaml
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2020-02-05T17:23:13Z"
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "148"
+    selfLink: /api/v1/namespaces/default/services/kubernetes
+    uid: 5e8959cb-bf2c-44d6-848e-72bc3822589d
+  spec:
+    clusterIP: 10.96.0.1
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 6443
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2020-02-12T19:30:00Z"
+    labels:
+      run: nginx
+    name: nginx
+    namespace: default
+    resourceVersion: "354618"
+    selfLink: /api/v1/namespaces/default/services/nginx
+    uid: 9b94f2c2-18c7-43d3-8c1e-35e0f6279733
+  spec:
+    clusterIP: 10.99.40.168
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+      run: nginx
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
+
+vagrant@k8s-master:~$ kubectl get services nginx -o yaml
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-12T19:30:00Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+  resourceVersion: "354618"
+  selfLink: /api/v1/namespaces/default/services/nginx
+  uid: 9b94f2c2-18c7-43d3-8c1e-35e0f6279733
+spec:
+  clusterIP: 10.99.40.168
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+ 
+```
+
+```
+vagrant@k8s-master:~$ kubectl get services nginx -o yaml > my_first_service.yaml
+vagrant@k8s-master:~$ vim my_first_service.yaml 
 
 
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: ClusterIP
+
+vagrant@k8s-master:~$ vim my_first_service.yaml
+
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   7d2h
+nginx        ClusterIP   10.99.40.168   <none>        80/TCP    100s
+
+```
 
 
 
