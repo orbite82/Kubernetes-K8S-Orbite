@@ -488,7 +488,8 @@ vagrant@k8s-master:~$ kubectl get deployments. nginx -o yaml
 
 ```
 
-`Padrão yaml`
+`Padrão yaml`:
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -560,7 +561,7 @@ status:
   vagrant@k8s-master:~$ kubectl get deployments. nginx -o yaml > primeiro_deployment.yaml
 
   ```
-* yaml alterado:
+* `yaml alterado`:
 
 ```
 vagrant@k8s-master:~$ cat primeiro_deployment.yaml 
@@ -677,7 +678,7 @@ nginx      1/1     1            1           26m
 ---
 ---
 
-# Criando um service, para acessar interno
+# Criando um Services, para acessar interno
 
 ```
 vagrant@k8s-master:~$ kubectl expose deployment my-nginx
@@ -710,7 +711,7 @@ my-nginx     NodePort    10.97.65.173   <none>        80:31964/TCP   12s
 ---
 ---
 
-# Criando primeiro service
+# Criando primeiro Services
 
 `Base`
 
