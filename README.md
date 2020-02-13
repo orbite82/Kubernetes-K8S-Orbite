@@ -49,7 +49,7 @@ ip_vs
 ```
 ---
 
-* Verifica nodes e informações
+* Verificar nodes e informações
 
 ```
 
@@ -796,6 +796,10 @@ status:
   loadBalancer: {}
  
 ```
+---
+---
+
+# Criando primeiro Services tipo ClusterIP
 
 ```
 vagrant@k8s-master:~$ kubectl get services nginx -o yaml > my_first_service.yaml
@@ -828,6 +832,94 @@ kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   7d2h
 nginx        ClusterIP   10.99.40.168   <none>        80/TCP    100s
 
 ```
+---
+---
+
+# Criando primeiro Services tipo NodePort
+
+```
+
+vagrant@k8s-master:~$ kubectl get service nginx -o yaml > my_first_service_nodeport.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-13T19:31:52Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+spec:
+  clusterIP: 10.103.3.243
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 30260
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: NodePort
+
+vagrant@k8s-master:~$ kubectl create -f my_first_service_nodeport.yaml 
+service/nginx created
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        8d
+nginx        NodePort    10.103.3.243   <none>        80:30260/TCP   26s
+  
+```
+# Criando primeiro Services tipo LoadBalancer
+
+```
+vagrant@k8s-master:~$ kubectl expose deployment nginx --type=LoadBalancer
+service/nginx exposed
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP      10.96.0.1      <none>        443/TCP        8d
+nginx        LoadBalancer   10.97.37.131   <pending>     80:31596/TCP   9s
+
+vagrant@k8s-master:~$ kubectl get endpoints
+NAME         ENDPOINTS                             AGE
+kubernetes   172.16.1.10:6443                      8d
+nginx        192.168.247.27:80,192.168.84.157:80   64s
+
+vagrant@k8s-master:~$ kubectl get services nginx -o yaml > my_first_service_loadbalancer.yaml
+
+vagrant@k8s-master:~$ vim my_first_service_loadbalancer.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 31596
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: LoadBalancer
 
 
+vagrant@k8s-master:~$ kubectl delete service nginx
+service "nginx" deleted
 
+vagrant@k8s-master:~$ kubectl create -f my_first_service_loadbalancer.yaml 
+service/nginx created
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP      10.96.0.1        <none>        443/TCP        8d
+nginx        LoadBalancer   10.108.158.195   <pending>     80:31596/TCP   15s
+
+```
