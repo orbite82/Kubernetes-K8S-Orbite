@@ -1267,4 +1267,88 @@ service/nginx edited
 
 ```
 
+```
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        8d
+nginx        NodePort    10.105.12.65   <none>        80:30376/TCP   6m6s
+
+```
+* Editando porta ou mais o que precisar alterar
+
+```
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-14T14:04:18Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+  resourceVersion: "715211"
+  selfLink: /api/v1/namespaces/default/services/nginx
+  uid: c359e34f-7f05-49d8-89bd-e04606fdc674
+spec:
+  clusterIP: 10.105.12.65
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 30376
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}
+
+vagrant@k8s-master:~$ kubectl edit service nginx
+service/nginx edited
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        8d
+nginx        NodePort    10.105.12.65   <none>        80:31376/TCP   11m
+
+vagrant@k8s-master:~$ kubectl get  replicasets.
+NAME                  DESIRED   CURRENT   READY   AGE
+my-nginx-75d484d94b   10        10        10      17m
+
+vagrant@k8s-master:~$ kubectl edit deployment my-nginx
+deployment.apps/my-nginx edited
+
+vagrant@k8s-master:~$ kubectl get replicasets.
+NAME                  DESIRED   CURRENT   READY   AGE
+my-nginx-75d484d94b   4         4         4       19m
+
+```
+---
+---
+
+#
+
+```
+vagrant@k8s-master:~$ kubectl get deployments.
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   4/4     4            4           3h44m
+vagrant@k8s-master:~$ kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+my-nginx-75d484d94b-f7rrk   1/1     Running   0          3h44m
+my-nginx-75d484d94b-fhb4p   1/1     Running   0          3h44m
+my-nginx-75d484d94b-l68gb   1/1     Running   0          3h44m
+my-nginx-75d484d94b-zjgzv   1/1     Running   0          3h44m
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+my-nginx-75d484d94b-f7rrk   1/1     Running   0          3h44m   192.168.84.183   node-1   <none>           <none>
+my-nginx-75d484d94b-fhb4p   1/1     Running   0          3h44m   192.168.84.184   node-1   <none>           <none>
+my-nginx-75d484d94b-l68gb   1/1     Running   0          3h44m   192.168.247.52   node-2   <none>           <none>
+my-nginx-75d484d94b-zjgzv   1/1     Running   0          3h44m   192.168.247.53   node-2   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl exec -ti my-nginx-75d484d94b-f7rrk -- bash
+root@my-nginx-75d484d94b-f7rrk:/# apt-get update && apt-get install -y stress
 
