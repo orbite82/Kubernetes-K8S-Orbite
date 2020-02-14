@@ -922,4 +922,349 @@ NAME         TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
 kubernetes   ClusterIP      10.96.0.1        <none>        443/TCP        8d
 nginx        LoadBalancer   10.108.158.195   <pending>     80:31596/TCP   15s
 
+vagrant@k8s-master:~$ kubectl get endpoints
+NAME         ENDPOINTS                             AGE
+kubernetes   172.16.1.10:6443                      8d
+nginx        192.168.247.27:80,192.168.84.157:80   3m6s
+
+vagrant@k8s-master:~$ kubectl describe endpoints nginx
+Name:         nginx
+Namespace:    default
+Labels:       run=nginx
+Annotations:  endpoints.kubernetes.io/last-change-trigger-time: 2020-02-13T20:15:18Z
+Subsets:
+  Addresses:          192.168.247.27,192.168.84.157
+  NotReadyAddresses:  <none>
+  Ports:
+    Name     Port  Protocol
+    ----     ----  --------
+    <unset>  80    TCP
+
+Events:  <none>
+
 ```
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    run: nginx
+  name: my-nginx
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 10
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+      vagrant@k8s-master:~$ kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+my-nginx-5578584966-6ctvd   1/1     Running   0          15h
+my-nginx-5578584966-cpj65   1/1     Running   0          15h
+my-nginx-5578584966-d2f7z   1/1     Running   0          15h
+my-nginx-5578584966-ghdx9   1/1     Running   0          15h
+my-nginx-5578584966-rp9k7   1/1     Running   0          15h
+my-nginx-5578584966-scplj   1/1     Running   0          15h
+my-nginx-5578584966-sg8ss   1/1     Running   0          15h
+my-nginx-5578584966-twr8g   1/1     Running   0          15h
+my-nginx-5578584966-xkghg   1/1     Running   0          15h
+my-nginx-5578584966-zh2z5   1/1     Running   0          15h
+
+```
+# Deployment e Services tudo junto
+```
+vagrant@k8s-master:~$ ls
+my_first_deployment.yaml  my_first_service.yaml  my_first_service_loadbalancer.yaml  my_first_service_nodeport.yaml
+
+vagrant@k8s-master:~$ cat my_first_service_nodeport.yaml 
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-13T19:31:52Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+spec:
+  clusterIP: 10.103.3.243
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 30260
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: NodePort
+
+vagrant@k8s-master:~$ vim my_first_deployment.yaml 
+
+```
+`copia e deixa assim:`
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    run: nginx
+  name: my-nginx
+  namespace: default
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-13T19:31:52Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+spec:
+  clusterIP: 10.103.3.243
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 30260
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: NodePort
+
+```
+
+```
+vagrant@k8s-master:~$ kubectl delete deployments. my-nginx
+deployment.apps "my-nginx" deleted
+
+vagrant@k8s-master:~$ kubectl delete service nginx
+service "nginx" deleted
+
+vagrant@k8s-master:~$ kubectl delete -f my_first_deployment.yaml
+deployment.apps "my-nginx" deleted
+
+vagrant@k8s-master:~$ kubectl create -f my_first_deployment.yaml 
+deployment.apps/my-nginx created
+service/nginx created
+
+```
+
+---
+---
+
+# Recursos limitados
+
+```
+vagrant@k8s-master:~$ cp my_first_deployment.yaml deployment_limited.yaml
+vagrant@k8s-master:~$ vim deployment_limited.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    run: nginx
+  name: my-nginx
+  namespace: default
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: 
+          limits:
+            memory: 512Mi
+            cpu: "500m"
+          requests:
+            memory: 256Mi
+            cpu: "250m"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+```
+
+```
+vagrant@k8s-master:~$ kubectl create -f deployment_limited.yaml
+deployment.apps/my-nginx created
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   10/10   10           10          84s
+
+vagrant@k8s-master:~$ kubectl describe deployments. my-nginx
+Name:                   my-nginx
+Namespace:              default
+CreationTimestamp:      Fri, 14 Feb 2020 13:59:46 +0000
+Labels:                 run=nginx
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               run=nginx
+Replicas:               10 desired | 10 updated | 10 total | 10 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  run=nginx
+  Containers:
+   nginx:
+    Image:      nginx
+    Port:       80/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:     500m
+      memory:  512Mi
+    Requests:
+      cpu:        250m
+      memory:     256Mi
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   my-nginx-75d484d94b (10/10 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  2m20s  deployment-controller  Scaled up replica set my-nginx-75d484d94b to 10
+
+
+vagrant@k8s-master:~$ kubectl create -f my_first_service.yaml
+service/nginx created
+
+vagrant@k8s-master:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   8d
+nginx        ClusterIP   10.105.12.65   <none>        80/TCP    15s
+
+```
+
+* Editando um arquivo 
+
+```
+vagrant@k8s-master:~$ kubectl edit service nginx
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-14T14:04:18Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+  resourceVersion: "714681"
+  selfLink: /api/v1/namespaces/default/services/nginx
+  uid: c359e34f-7f05-49d8-89bd-e04606fdc674
+spec:
+  clusterIP: 10.105.12.65
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+```
+`Editado:`
+
+```
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-02-14T14:04:18Z"
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+  resourceVersion: "714681"
+  selfLink: /api/v1/namespaces/default/services/nginx
+  uid: c359e34f-7f05-49d8-89bd-e04606fdc674
+spec:
+  clusterIP: 10.105.12.65
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: nginx
+  sessionAffinity: None
+  type: NodePort
+status:
+  loadBalancer: {}
+
+vagrant@k8s-master:~$ kubectl edit service nginx
+service/nginx edited
+
+```
+
+
