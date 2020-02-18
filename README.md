@@ -1367,7 +1367,7 @@ vagrant@k8s-master:~$ kubectl delete service nginx
 ---
 ---
 
-# LimitRange
+# Criar NameSpcaces 
 
 https://kubernetes.io/docs/concepts/policy/limit-range/
 
@@ -1459,5 +1459,27 @@ kube-system       Active   12d
 orbitex           Active   8m49s
 orbitex2          Active   81s
 
+```
+---
+---
+# LimitRange
 
 ```
+vagrant@k8s-master:~$ vim my_limited_namespace.yaml
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limited-resources
+spec:
+  limits:
+  - default:
+      cpu: 1
+      memory: 256Mi
+    defaultRequest:
+      cpu: 0.5
+      memory: 128Mi
+    type: Container
+
+```
+
