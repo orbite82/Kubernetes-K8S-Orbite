@@ -1367,7 +1367,7 @@ vagrant@k8s-master:~$ kubectl delete service nginx
 ---
 ---
 
-# Criar NameSpcaces 
+# Criar NameSpaces 
 
 https://kubernetes.io/docs/concepts/policy/limit-range/
 
