@@ -1351,4 +1351,106 @@ my-nginx-75d484d94b-zjgzv   1/1     Running   0          3h44m   192.168.247.53 
 
 vagrant@k8s-master:~$ kubectl exec -ti my-nginx-75d484d94b-f7rrk -- bash
 root@my-nginx-75d484d94b-f7rrk:/# apt-get update && apt-get install -y stress
+root@my-nginx-75d484d94b-f7rrk:/# stress --vm 1 --vm-bytes 504M
+root@my-nginx-75d484d94b-f7rrk:/# exit
+vagrant@k8s-master:~$ kubectl delete deployments. my-nginx
+vagrant@k8s-master:~$ kubectl delete service nginx
 
+```
+---
+---
+
+# LimitRange
+
+https://kubernetes.io/docs/concepts/policy/limit-range/
+
+```
+vagrant@k8s-master:~$ kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   12d
+kube-node-lease   Active   12d
+kube-public       Active   12d
+kube-system       Active   12d
+vagrant@k8s-master:~$ kubectl create namespace orbitex
+namespace/orbitex created
+vagrant@k8s-master:~$ kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   12d
+kube-node-lease   Active   12d
+kube-public       Active   12d
+kube-system       Active   12d
+orbitex           Active   13s
+vagrant@k8s-master:~$ kubectl describe namespace orbitex
+Name:         orbitex
+Labels:       <none>
+Annotations:  <none>
+Status:       Active
+
+No resource quota.
+
+No LimitRange resource.
+vagrant@k8s-master:~$ kubectl get namespaces orbitex -o yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2020-02-18T14:08:08Z"
+  name: orbitex
+  resourceVersion: "770680"
+  selfLink: /api/v1/namespaces/orbitex
+  uid: 0254765b-d2a3-43bb-a17d-0397ca4e9a3b
+spec:
+  finalizers:
+  - kubernetes
+status:
+  phase: Active
+
+vagrant@k8s-master:~$ kubectl get namespaces orbitex -o yaml > my_first_namespace.yaml
+
+vagrant@k8s-master:~$ vim my_first_namespace.yaml   
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2020-02-18T14:08:08Z"
+  name: orbitex
+  resourceVersion: "770680"
+  selfLink: /api/v1/namespaces/orbitex
+  uid: 0254765b-d2a3-43bb-a17d-0397ca4e9a3b
+spec:
+  finalizers:
+  - kubernetes
+status:
+  phase: Active
+
+```
+```
+vagrant@k8s-master:~$ vim my_first_namespace.yaml 
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2020-02-18T14:08:08Z"
+  name: orbitex2
+  resourceVersion: "770680"
+  selfLink: /api/v1/namespaces/orbitex
+  uid: 0254765b-d2a3-43bb-a17d-0397ca4e9a3b
+spec:
+  finalizers:
+  - kubernetes
+status:
+  phase: Active
+
+vagrant@k8s-master:~$ kubectl create -f  my_first_namespace.yaml 
+namespace/orbitex2 created
+
+vagrant@k8s-master:~$ kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   12d
+kube-node-lease   Active   12d
+kube-public       Active   12d
+kube-system       Active   12d
+orbitex           Active   8m49s
+orbitex2          Active   81s
+
+
+```
