@@ -1,3 +1,6 @@
+---
+---
+
 # Kubernetes-K8S-Orbite
 
 * Instalação Kubernetes:
@@ -47,6 +50,7 @@ ip_vs
 # kubeadm join --token 39c341.a3bc3c4dd49758d5 IP_DO_MASTER:6443 --discovery-token-ca-cert-hash sha256:37092
 
 ```
+---
 ---
 
 * Verificar nodes e informações
@@ -626,7 +630,8 @@ my-nginx   1/1     1            1           26s
 nginx      1/1     1            1           20m
 
 ```
-
+---
+---
 # Removendo o deployments
 
 ```
@@ -637,7 +642,8 @@ NAME    READY   UP-TO-DATE   AVAILABLE   AGE
 nginx   1/1     1            1           22m
 
 ```
-
+---
+---
 # Subindo com 10 replicas o deployments
 
 ```
@@ -871,6 +877,8 @@ kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP        8d
 nginx        NodePort    10.103.3.243   <none>        80:30260/TCP   26s
   
 ```
+---
+---
 # Criando primeiro Services tipo LoadBalancer
 
 ```
@@ -990,7 +998,10 @@ my-nginx-5578584966-xkghg   1/1     Running   0          15h
 my-nginx-5578584966-zh2z5   1/1     Running   0          15h
 
 ```
+---
+---
 # Deployment e Services tudo junto
+
 ```
 vagrant@k8s-master:~$ ls
 my_first_deployment.yaml  my_first_service.yaml  my_first_service_loadbalancer.yaml  my_first_service_nodeport.yaml
@@ -1327,10 +1338,6 @@ NAME                  DESIRED   CURRENT   READY   AGE
 my-nginx-75d484d94b   4         4         4       19m
 
 ```
----
----
-
-#
 
 ```
 vagrant@k8s-master:~$ kubectl get deployments.
