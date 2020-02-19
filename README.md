@@ -38,30 +38,44 @@ Como mencionado acima, as aplicações e serviços propriamente ditos estão exe
 Como descrito acima, o servidor mestre age como o plano de controle primário para os clusters do Kubernetes. Ele serve como o principal ponto de contato para administradores e usuários, e também fornece muitos sistemas em todo o cluster para os nodes de trabalho relativamente pouco sofisticados. No geral, os componentes no servidor mestre trabalham juntos para aceitar solicitações de usuários, determinar as melhores maneiras de agendar containers de carga de trabalho, autenticar clientes e nodes, ajustar a rede de todo o cluster, e gerenciar as responsabilidades de escalabilidade e verificação de saúde.
 
 Estes componentes podem ser instalados em uma única máquina ou distribuídos por vários servidores. Vamos dar uma olhada em cada componente individual associado com o servidor mestre nesta seção.
+```
 
 `etcd`
+
+```
 Um dos componentes fundamentais que o Kubernetes precisa para funcionar é um armazenamento de configuração disponível globalmente. O projeto etcd, desenvolvido pelo time da CoreOS, é um armazenamento de chave-valor leve e distribuído, que pode ser configurado para se estender por vários nodes.
 
 O Kubernetes utiliza o etcd para armazenar dados de configuração que podem ser acessados por cada um dos nodes no cluster. Isso pode ser usado para descoberta de serviços e pode ajudar os componentes a se configurarem ou se reconfigurarem de acordo com informações atualizadas. Isso também ajuda a manter o estado do cluster com recursos como eleição de líder e bloqueio distribuído. Ao fornecer uma API HTTP/JSON simples, a interface para definir ou recuperar valores é muito direta.
 
 Como a maioria dos outros componentes no plano de controle, o etcd pode ser configurado em um único servidor mestre ou, em cenários de produção, distribuído entre várias máquinas. O único requisito é que ele deve ser acessível via rede para cada uma das máquinas Kubernetes.
-
+```
 `kube-apiserver`
+
+```
 Um dos serviços mais importantes do servidor mestre é o servidor de API. Este é o principal ponto de contato do cluster todo, pois permite que um usuário configure cargas de trabalho e unidades organizacionais do Kubernetes. Ele também é responsável por certificar-se de que o armazenamento etcd e os detalhes dos serviços dos containers implantados estão de acordo. Ele age como uma ponte entre vários componentes para manter a saúde do cluster e disseminar informações e comandos.
 
 O servidor de API implementa uma interface RESTful, o que significa que várias ferramentas distintas e bibliotecas podem comunicar-se prontamente com ele. Um cliente chamado kubectl está disponível como um método padrão de interação com o cluster Kubernetes a partir de um computador local.
+```
 
 `kube-controller-manager`
+
+```
 O controller manager é um serviço geral que tem muitas responsabilidades. Primeiramente, ele gerencia diferentes controladores que regulam o estado do cluster, gerencia o ciclo de vida das cargas de trabalho, e realiza tarefas rotineiras. Por exemplo, um controlador de replicação assegura que o número de réplicas (cópias idênticas) definidas para um pod corresponda ao número atualmente implantado no cluster. Os detalhes dessas operações são gravadas no etcd, onde o controller manager observa as alterações por meio do servidor da API.
 
 Quando uma alteração é vista, o controlador lê as novas informações e implementa o procedimento que preenche o estado desejado. Isto pode envolver escalar uma aplicação para cima ou para baixo, ajustar endpoints, etc.
+```
 
 `kube-scheduler`
+
+```
 O processo que de fato atribui cargas de trabalho a nodes específicos no cluster é o scheduler ou agendador. Este serviço lê os requisitos operacionais da carga de trabalho, analisa o ambiente de infraestrutura atual, e coloca o trabalho em um node ou nodes aceitáveis.
 
 O scheduler é responsável por rastrear a capacidade disponível em cada host para certificar-se de que as cargas de trabalho não estão agendadas para além dos recursos disponíveis. O scheduler deve saber a capacidade total bem como os recursos já alocados para cargas de trabalho existentes em cada servidor.
+```
 
 `cloud-controller-manager`
+
+```
 O Kubernetes pode ser implantado em muitos ambientes diferentes e pode interagir com vários provedores de infraestrutura para entender e gerenciar o estado dos recursos no cluster. Como o Kubernetes trabalha com representações genéricas de recursos como armazenamento anexável e balanceadores de carga, ele precisa de uma forma de mapear estes para os recursos reais fornecidos por provedores de nuvem heterogêneos.
 
 Os cloud controller managers ou gerentes controladores de nuvem agem como a cola que permite o Kubernetes interagir com provedores com diferentes capacidades, recursos, e APIs enquanto mantém construções relativamente genéricas internamente. Isto permite ao Kubernetes atualizar suas informações de estado de acordo com as informações recolhidas a partir do provedor de nuvem, ajustar recursos de nuvem conforme as mudanças sejam necessárias no sistema, e criar e usar serviços de nuvem adicionais para satisfazer os requisitos de trabalho submetidos ao cluster.
@@ -79,13 +93,19 @@ No Kubernetes, os servidores que realizam trabalho através da execução de con
 O primeiro componente que cada node deve ter é um runtime de container. Geralmente, este requisito é satisfeito através da instalação e execução do Docker, mas alternativas como o rkt e o runc também estão disponíveis.
 
 O runtime de container é responsável por iniciar e gerenciar containers, aplicações encapsuladas em um ambiente operacional relativamente isolado, mas leve. Cada unidade de trabalho no cluster é, em seu nível básico, implementada como um ou mais containers que devem ser implantados. O runtime de container em cada node é o componente que finalmente executa os containers definidos na carga de trabalho submetida ao cluster.
+```
 
 `kubelet`
+
+```
 O principal ponto de contato de cada node com o grupo de cluster é um pequeno serviço chamado kubelet. Este serviço é responsável por replicar informações de e para os serviços do plano de controle, bem como interagir com o armazenamento etcd para ler detalhes de configuração ou gravar novos valores.
 
 O serviço kubelet comunica-se com os componentes do mestre para autenticar no cluster e receber comandos e trabalho. O trabalho é recebido na forma de um manifesto que define a carga de trabalho e os parâmetros operacionais. O processo do kubelet então assume a responsabilidade pela manutenção do estado do trabalho no servidor de node. Ele controla o runtime de container para lançar ou destruir containers quando necessário.
+```
 
 `kube-proxy`
+
+```
 Para gerenciar sub-redes de hosts individuais e tornar os serviços disponíveis para outros componentes, um pequeno serviço de proxy chamado kube-proxy é executado em cada servidor de node. Este processo encaminha requisições aos containers corretos, e é geralmente responsável por certificar-se de que o ambiente de rede é previsível e acessível, mas isolado quando apropriado.
 ```
 
@@ -93,8 +113,11 @@ Para gerenciar sub-redes de hosts individuais e tornar os serviços disponíveis
 
 ```
 Enquanto os containers são o mecanismo subjacente utilizado para implantar aplicações, o Kubernetes usa camadas adicionais de abstração sobre a interface do container para fornecer escala, resiliência, e recursos de gerenciamento do ciclo de vida. Em vez de gerenciar os containers diretamente, os usuários definem e interagem com instâncias compostas de várias primitivas fornecidas pelo modelo de objeto do Kubernetes. Analisaremos os diferentes tipos de objetos que podem ser usados para definir essas cargas de trabalho abaixo.
+```
 
 `Pods`
+
+```
 Um pod é a unidade mais básica com a qual o Kubernetes lida. Os containers propriamente ditos não são atribuídos a hosts. Em vez disso, um ou mais containers fortemente acoplados são encapsulados em um objeto chamado de pod.
 
 Um pod geralmente representa um ou mais containers que devem ser controlados com uma única aplicação. Pods consistem em containers que operam em conjunto, compartilham um ciclo de vida, e devem sempre passar pelo scheduling no mesmo node. Eles são gerenciados inteiramente como uma unidade e compartilham seu ambiente, volumes, e espaço de IP. A despeito de sua implementação em container, você deve geralmente pensar no pod como uma aplicação única, monolítica, para melhor conceituar como o cluster gerenciará os recursos e o agendamento do pod.
@@ -116,27 +139,39 @@ O replication controller é responsável por assegurar que o número de pods imp
 Replication Sets ou Conjuntos de Replicação são uma iteração no design do replication controller com maior flexibilidade em como o controlador identifica os pods que ele deve gerenciar. Os replication sets estão começando a substituir os replication controllers por causa de seus recursos de seleção de réplicas que são maiores, mas eles não são capazes de fazer atualizações contínuas para colocar os backends em uma nova versão como os replication controllers fazem. Em vez disso, os replication sets destinam-se a ser usados dentro de unidades adicionais de nível superior que fornecem essa funcionalidade.
 
 Assim como os pods, tanto os replication controllers quanto os replication sets raramente são as unidades com as quais você trabalhará diretamente. Enquanto eles constroem-se em cima do projeto do pod para adicionar escalonamento horizontal e garantias de confiabilidade, eles não possuem alguns dos recursos de gerenciamento de ciclo de vida refinados encontrados em objetos mais complexos.
+```
 
 `Deployments`
+
+```
 Deployments são uma das cargas de trabalho mais comuns para se criar e gerenciar diretamente. Os deployments usam os replication sets como blocos construtivos, adicionando a funcionalidade de gerenciamento flexível do ciclo de vida ao mix.
 
 Embora os deployments criados com replication sets possam parecer duplicar a funcionalidade oferecida pelos replication controllers, eles resolvem muitos dos pontos problemáticos que existiam na implementação de atualizações contínuas. Ao atualizar aplicativos com replication controllers, os usuários são obrigados a enviar um plano para um novo replication controller que substitua o controlador atual. Ao usar replication controllers, tarefas como histórico de rastreamento, recuperação de falhas de rede durante a atualização e reversão de alterações ruins são difíceis ou deixadas como responsabilidade do usuário.
 
 Deployments são objetos de alto nível projetados para facilitar o gerenciamento do ciclo de vida de pods replicados. Os deployments podem ser modificadas facilmente alterando a configuração e o Kubernetes ajustará os replication sets, gerenciará transições entre diferentes versões de aplicações, e, opcionalmente, manterá o histórico de eventos e irá desfazer recursos automaticamente. Por causa desses recursos, os deployments provavelmente serão o tipo de objeto do Kubernetes com o qual você trabalhará com mais frequência.
+```
 
 `Stateful Sets`
+
+```
 Stateful Sets ou Conjuntos com preservação de estado são pods controladores especializados que oferecem pedidos e garantias de exclusividade. Primeiramente, eles são usados para ter um controle mais refinado quando você tem requisitos especiais relacionados ao pedido de implantação, dados persistentes ou redes estáveis. Por exemplo, stateful sets são geralmente associados a aplicações orientadas a dados, como bancos de dados, que precisam de acesso aos mesmos volumes, mesmo se reprogramados para um novo node.
 
 Stateful sets fornecem um identificador de rede estável através da criação de um nome exclusivo baseado em número para cada conjunto que persistirá, mesmo se o conjunto precisar ser movido para outro node. Da mesma forma, volumes de armazenamento persistentes podem ser transferidos com um pod quando o rescheduling é necessário. Os volumes persistem mesmo depois que o pod foi excluído para evitar perda acidental de dados.
 
 Ao implantar ou ajustar a escala, os stateful sets executam operações de acordo com o identificador numerado em seu nome. Isso proporciona maior previsibilidade e controle sobre a ordem de execução, o que pode ser útil em alguns casos.
+```
 
 `Daemon Sets`
+
+```
 Daemon Sets são outra forma especializada de controlador de pods que executa uma cópia de um pod em cada node no cluster (ou um subconjunto, se especificado). Isso geralmente é útil ao implantar pods que ajudam a executar a manutenção e fornecem serviços para os próprios nodes.
 
 Por exemplo, coletar e encaminhar logs, agregar métricas e executar serviços que aumentam os recursos do próprio node são candidatos populares para daemon sets. Como os daemon sets geralmente fornecem serviços fundamentais e são necessários em toda a frota, eles podem ignorar restrições de scheduling de pods que impedem que outros controladores atribuam pods a determinados hosts. Por exemplo, devido às suas responsabilidades exclusivas, o servidor mestre é frequentemente configurado para não estar disponível para o scheduling normal de pods, mas os daemon sets têm a capacidade de substituir a restrição em uma base de pod-por-pod para garantir que os serviços essenciais estejam em execução.
+```
 
 `Jobs e Cron Jobs`
+
+```
 As cargas de trabalho que descrevemos até agora assumiram um ciclo de vida de longa duração e voltado a serviços. O Kubernetes usa uma carga de trabalho chamada jobs para fornecer um fluxo de trabalho baseado em tarefas, no qual espera-se que os containers em execução saiam com êxito após algum tempo depois de concluírem o seu trabalho. Os jobs são úteis se você precisar executar processamento único ou em lote, em vez de executar um serviço contínuo.
 
 Os cron jobs são construídos sobre os jobs. Como os daemons convencionais do cron nos sistemas Linux e Unix-like que executam scripts em uma agenda, os cron jobs no Kubernetes fornecem uma interface para executar jobs com um componente de agendamento. Os Cron jobs podem ser usados para agendar um trabalho para ser executado no futuro ou em uma base regular e recorrente. Os cron jobs do Kubernetes são basicamente uma reimplementação do comportamento clássico do cron, usando o cluster como uma plataforma, em vez de um único sistema operacional.
@@ -146,8 +181,11 @@ Os cron jobs são construídos sobre os jobs. Como os daemons convencionais do c
 
 ```
 Além das cargas de trabalho que você pode executar em um cluster, o Kubernetes fornece várias outras abstrações que ajudam você a gerenciar seus aplicativos, controlar a rede e ativar a persistência. Vamos discutir alguns dos exemplos mais comuns aqui.
+```
 
 `Serviços`
+
+```
 Até agora, temos usado o termo “serviço” no sentido convencional Unix-like: para denotar processos de longa duração, frequentemente conectados em rede, capazes de responder a solicitações. No entanto, no Kubernetes, um serviço é um componente que atua como um balanceador de carga básico interno e um embaixador para os pods. Um serviço agrupa coleções lógicas de pods que executam a mesma função para apresentá-las como uma entidade única.
 
 Isso permite que você implante um serviço que possa rastrear e rotear todos os containers de backend de um determinado tipo. Os consumidores internos precisam apenas saber o endpoint estável fornecido pelo serviço. Enquanto isso, a abstração de serviço lhe permite dimensionar ou substituir as unidades de trabalho de backend conforme necessário. O endereço IP de um serviço permanece estável, independentemente das alterações nos pods para os quais ele é encaminhado. Ao implantar um serviço, você obtém facilmente a capacidade de descoberta e pode simplificar seus projetos de container.
