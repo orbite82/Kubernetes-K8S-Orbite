@@ -4,18 +4,23 @@ https://www.digitalocean.com/community/tutorials/uma-introducao-ao-kubernetes-pt
 
 `Introdução`
 
+```
 Kubernetes é um poderoso sistema open-source, inicialmente desenvolvido pelo Google, para o gerenciamento de aplicações em container em um ambiente clusterizado. Ele visa fornecer melhores maneiras de gerenciar componentes e serviços relacionados e distribuídos em diversas infraestruturas.
 
 Neste guia, vamos discutir alguns conceitos básicos do Kubernetes. Vamos falar sobre a arquitetura do sistema, os problemas que ele resolve, e o modelo que ele utiliza para tratar deployments em container e escalabilidade.
+```
 
 * O que é o Kubernetes?
 
+```
 Kubernetes, em seu nível mais básico, é um sistema para executar e coordenar aplicações em container através de um cluster de máquinas. É uma plataforma desenhada para gerenciar completamente o ciclo de aplicações e serviços em container utilizando métodos que fornecem previsibilidade, escalabilidade, e alta disponibilidade.
 
 Como usuário do Kubernetes, você pode definir como as suas aplicações devem rodar e as maneiras pelas quais elas devem ser capazes de interagir com outras aplicações ou com o mundo exterior. Você pode escalar seus serviços para cima ou para baixo, executar atualizações contínuas elegantemente, e trocar tráfego entre diferentes versões de suas aplicações para testar recursos ou reverter deployments problemáticos. O Kubernetes fornece interfaces e primitivas de plataformas combináveis que lhe permitem definir e gerenciar suas aplicações com alto grau de flexibilidade, potência, e confiabilidade.
+```
 
 * Arquitetura do Kubernetes
 
+```
 Para entender como o Kubernetes é capaz de fornecer esses recursos, é útil ter uma noção de como ele é projetado e organizado em alto nível. O Kubernetes pode ser visto como um sistema construído em camadas, com cada camada mais alta abstraindo a complexidade encontrada nos níveis mais baixos.
 
 Em sua base, o Kubernetes reúne máquinas físicas ou virtuais individuais em um cluster usando uma rede compartilhada para comunicar entre cada servidor. Esse cluster é a plataforma física onde todos os componentes, recursos, e cargas de trabalho do Kubernetes são configurados.
@@ -25,9 +30,11 @@ Cada uma das máquinas do cluster recebe um papel dentro do ecossistema do Kuber
 As outras máquinas no cluster são designadas como nodes ou nós: servidores responsáveis por aceitar e executar cargas de trabalho utilizando recursos locais e externos. Para ajudar no isolamento, gerenciamento, e flexibilidade, o Kubernetes executa aplicações e serviços em containers, então cada node precisa estar equipado com o runtime de container (como o Docker ou rkt). O node recebe instruções de trabalho do servidor mestre e cria ou destrói containers de acordo, ajustando as regras de rede para rotear e encaminhar o tráfego apropriadamente.
 
 Como mencionado acima, as aplicações e serviços propriamente ditos estão executando no cluster dentro de containers. Os componentes subjacentes certificam-se de que o estado desejado das aplicações correspondam ao estado real do cluster. Os usuários interagem com o cluster através da comunicação com a API principal do servidor, seja diretamente ou através de clientes e bibliotecas. Para iniciar uma aplicação ou serviço, um plano declarativo é submetido em JSON ou YAML definindo o que criar e como ele deve ser gerenciado. O servidor mestre pega então o plano e descobre como executá-lo na infraestrutura através do exame dos requisitos e o estado atual do sistema. Esse grupo de aplicativos definidos pelo usuário, em execução de acordo com um plano especificado, representa a camada final do Kubernetes.
+```
 
 * Componentes do Servidor Mestre
 
+```
 Como descrito acima, o servidor mestre age como o plano de controle primário para os clusters do Kubernetes. Ele serve como o principal ponto de contato para administradores e usuários, e também fornece muitos sistemas em todo o cluster para os nodes de trabalho relativamente pouco sofisticados. No geral, os componentes no servidor mestre trabalham juntos para aceitar solicitações de usuários, determinar as melhores maneiras de agendar containers de carga de trabalho, autenticar clientes e nodes, ajustar a rede de todo o cluster, e gerenciar as responsabilidades de escalabilidade e verificação de saúde.
 
 Estes componentes podem ser instalados em uma única máquina ou distribuídos por vários servidores. Vamos dar uma olhada em cada componente individual associado com o servidor mestre nesta seção.
@@ -58,13 +65,17 @@ O scheduler é responsável por rastrear a capacidade disponível em cada host p
 O Kubernetes pode ser implantado em muitos ambientes diferentes e pode interagir com vários provedores de infraestrutura para entender e gerenciar o estado dos recursos no cluster. Como o Kubernetes trabalha com representações genéricas de recursos como armazenamento anexável e balanceadores de carga, ele precisa de uma forma de mapear estes para os recursos reais fornecidos por provedores de nuvem heterogêneos.
 
 Os cloud controller managers ou gerentes controladores de nuvem agem como a cola que permite o Kubernetes interagir com provedores com diferentes capacidades, recursos, e APIs enquanto mantém construções relativamente genéricas internamente. Isto permite ao Kubernetes atualizar suas informações de estado de acordo com as informações recolhidas a partir do provedor de nuvem, ajustar recursos de nuvem conforme as mudanças sejam necessárias no sistema, e criar e usar serviços de nuvem adicionais para satisfazer os requisitos de trabalho submetidos ao cluster.
+```
 
 * Componentes do Servidor de Nodes
 
+```
 No Kubernetes, os servidores que realizam trabalho através da execução de containers são conhecidos como nodes. Os servidores de nodes têm alguns requisitos necessários para se comunicar com os componentes do mestre, configuração da rede do container, e execução da carga de trabalho real atribuída a eles.
+```
 
 * Um Runtime de Container
 
+```
 O primeiro componente que cada node deve ter é um runtime de container. Geralmente, este requisito é satisfeito através da instalação e execução do Docker, mas alternativas como o rkt e o runc também estão disponíveis.
 
 O runtime de container é responsável por iniciar e gerenciar containers, aplicações encapsuladas em um ambiente operacional relativamente isolado, mas leve. Cada unidade de trabalho no cluster é, em seu nível básico, implementada como um ou mais containers que devem ser implantados. O runtime de container em cada node é o componente que finalmente executa os containers definidos na carga de trabalho submetida ao cluster.
@@ -76,9 +87,11 @@ O serviço kubelet comunica-se com os componentes do mestre para autenticar no c
 
 `kube-proxy`
 Para gerenciar sub-redes de hosts individuais e tornar os serviços disponíveis para outros componentes, um pequeno serviço de proxy chamado kube-proxy é executado em cada servidor de node. Este processo encaminha requisições aos containers corretos, e é geralmente responsável por certificar-se de que o ambiente de rede é previsível e acessível, mas isolado quando apropriado.
+```
 
 * Objetos e Cargas de Trabalho do Kubernetes
 
+```
 Enquanto os containers são o mecanismo subjacente utilizado para implantar aplicações, o Kubernetes usa camadas adicionais de abstração sobre a interface do container para fornecer escala, resiliência, e recursos de gerenciamento do ciclo de vida. Em vez de gerenciar os containers diretamente, os usuários definem e interagem com instâncias compostas de várias primitivas fornecidas pelo modelo de objeto do Kubernetes. Analisaremos os diferentes tipos de objetos que podem ser usados para definir essas cargas de trabalho abaixo.
 
 `Pods`
@@ -89,9 +102,11 @@ Um pod geralmente representa um ou mais containers que devem ser controlados com
 Geralmente, os pods consistem de um container principal que satisfaz o propósito geral da carga de trabalho e, opcionalmente, de alguns containers auxiliares que facilitam tarefas estreitamente relacionadas. Estes são programas que se beneficiam de serem executados e gerenciados em seus próprios containers, mas estão intimamente ligados ao aplicativo principal. Por exemplo, um pod pode ter um container executando o servidor de aplicação primário e um container auxiliar puxando arquivos para o sistema de arquivos compartilhado, quando são detectadas mudanças em um repositório externo. O escalonamento horizontal é geralmente desencorajado no nível do pod porque existem outros objetos de alto nível mais adequados para a tarefa.
 
 Geralmente, os usuários não devem gerenciar os próprios pods, porque eles não fornecem alguns dos recursos geralmente necessários em aplicações (como gerenciamento sofisticado do ciclo de vida e escalonamento). Em vez disso, os usuários são encorajados a trabalhar com objetos de alto nível que usam modelos de pod ou pods como componentes de base, mas que implementam funcionalidades adicionais.
+```
 
 * Controladores de Replicação e Conjuntos de Replicação
 
+```
 Frequentemente, ao trabalhar com o Kubernetes, em vez de trabalhar com pods únicos, você estará gerenciando grupos de pods idênticos e replicados. Estes são criados a partir de modelos de pod e podem ser escalados horizontalmente por controladores conhecidos como Replication Controllers e Replication Sets.
 
 Um Replication Controller ou controlador de replicação é um objeto que define um modelo de pod e os parâmetros de controle para escalar réplicas idênticas ou decrementar o número de cópias em execução. Esta é uma maneira fácil de distribuir a carga e aumentar a disponibilidade nativamente dentro do Kubernetes. O replication controller sabe como criar novos pods quando necessário, porque um modelo que se assemelha a uma definição de pod está embutido dentro da configuração dele.
@@ -125,9 +140,11 @@ Por exemplo, coletar e encaminhar logs, agregar métricas e executar serviços q
 As cargas de trabalho que descrevemos até agora assumiram um ciclo de vida de longa duração e voltado a serviços. O Kubernetes usa uma carga de trabalho chamada jobs para fornecer um fluxo de trabalho baseado em tarefas, no qual espera-se que os containers em execução saiam com êxito após algum tempo depois de concluírem o seu trabalho. Os jobs são úteis se você precisar executar processamento único ou em lote, em vez de executar um serviço contínuo.
 
 Os cron jobs são construídos sobre os jobs. Como os daemons convencionais do cron nos sistemas Linux e Unix-like que executam scripts em uma agenda, os cron jobs no Kubernetes fornecem uma interface para executar jobs com um componente de agendamento. Os Cron jobs podem ser usados para agendar um trabalho para ser executado no futuro ou em uma base regular e recorrente. Os cron jobs do Kubernetes são basicamente uma reimplementação do comportamento clássico do cron, usando o cluster como uma plataforma, em vez de um único sistema operacional.
+```
 
 * Outros Componentes do Kubernetes
 
+```
 Além das cargas de trabalho que você pode executar em um cluster, o Kubernetes fornece várias outras abstrações que ajudam você a gerenciar seus aplicativos, controlar a rede e ativar a persistência. Vamos discutir alguns dos exemplos mais comuns aqui.
 
 `Serviços`
@@ -140,27 +157,32 @@ Sempre que você precisar fornecer acesso a um ou mais pods para outro aplicativ
 Embora os serviços, por padrão, só estejam disponíveis usando um endereço IP roteável internamente, eles podem ser disponibilizados fora do cluster, escolhendo uma das várias estratégias. A configuração do NodePort funciona abrindo uma porta estática na interface de rede externa de cada node. O tráfego para a porta externa será roteado automaticamente para os pods apropriados usando um serviço IP de cluster interno.
 
 Alternativamente, o tipo de serviço LoadBalancer cria um balanceador de carga externo para rotear para o serviço usando a integração do balanceador de carga do Kubernetes do provedor de nuvem. O cloud controller manager criará o recurso apropriado e o configurará usando os endereços de serviço interno.
+```
 
 * Volumes e Volumes Persistentes
 
+```
 O compartilhamento confiável de dados e a garantia de sua disponibilidade entre reinicializações de containers é um desafio em muitos ambientes em container. Os runtimes de container geralmente fornecem algum mecanismo para anexar o armazenamento a um container que persiste além da vida útil do container, mas as implementações geralmente não possuem flexibilidade.
 
 Para resolver isso, o Kubernetes usa sua própria abstração de volumes, que permite que os dados sejam compartilhados por todos os containers dentro de um pod e permaneçam disponíveis até que o pod seja encerrado. Isso significa que pods fortemente acoplados podem compartilhar facilmente arquivos sem mecanismos externos complexos. Falhas no container dentro do pod não afetarão o acesso aos arquivos compartilhados. Depois que o pod é encerrado, o volume compartilhado é destruído, portanto, não é uma boa solução para dados realmente persistentes.
 
 Volumes persistentes são um mecanismo para abstrair armazenamento mais robusto que não está vinculado ao ciclo de vida do pod. Em vez disso, eles permitem que os administradores configurem recursos de armazenamento para o cluster que os usuários podem solicitar e reivindicar para os pods que estão executando. Depois que um pod é concluído com um volume persistente, a política de reivindicação do volume determina se o volume é mantido até ser excluído manualmente ou removido imediatamente junto com os dados. Dados persistentes podem ser usados para proteger contra falhas baseadas em node e para alocar quantidades maiores de armazenamento do que as disponíveis localmente.
+```
 
 * Labels e Annotations
 
+```
 Uma abstração organizacional do Kubernetes relacionada, mas fora dos outros conceitos, é a rotulagem. Um label no Kubernetes é uma tag semântica que pode ser anexada a objetos do Kubernetes para marcá-los como parte de um grupo. Estes podem ser selecionados para segmentar instâncias diferentes para gerenciamento ou roteamento. Por exemplo, cada um dos objetos baseados em controlador usa labels para identificar os pods nos quais eles devem operar. Os serviços usam labels para entender os pods de backend para os quais devem encaminhar solicitações.
 
 Os labels são fornecidos como pares simples de chave-valor. Cada unidade pode ter mais de um label, mas cada unidade só pode ter uma entrada para cada chave. Normalmente, uma chave de “nome” é usada como um identificador de propósito geral, mas você também pode classificar objetos por outros critérios, como estágio de desenvolvimento, acessibilidade pública, versão da aplicação, etc.
 
 Annotations são mecanismos semelhantes que permitem anexar informações arbitrárias de chave-valor a um objeto. Enquanto os labels devem ser usados para informações semânticas úteis para corresponder a um pod com critérios de seleção, as annotations são mais livres e podem conter dados menos estruturados. Em geral, as annotations são uma maneira de adicionar metadados ricos a um objeto que não é útil para fins de seleção.
-
+```
 * Conclusão
 
+```
 O Kubernetes é um projeto empolgante que permite aos usuários executar cargas de trabalho em containers altamente disponíveis e escaláveis em uma plataforma altamente abstrata. Embora a arquitetura e o conjunto de componentes internos do Kubernetes possam, a princípio, parecer assustadores, sua potência, flexibilidade e o robusto conjunto de recursos são inigualáveis no mundo do código aberto. Compreendendo como os blocos construtivos básicos se encaixam, você pode começar a projetar sistemas que aproveitem totalmente os recursos da plataforma para executar e gerenciar suas cargas de trabalho em escala.
-
+```
 ---
 ---
 
