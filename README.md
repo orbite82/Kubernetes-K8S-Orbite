@@ -2558,6 +2558,8 @@ NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
 first-deployment      1/1     1            1           5s
 
 ```
+
+```
 vagrant@k8s-master:~$ vim next-deployment.yaml
 
 apiVersion: apps/v1
@@ -2605,12 +2607,3 @@ first-deployment   1/1     1            1           6m49s
 next-deployment    1/1     1            1           82s
 
 ```
-
-
-
-
-
-
-
-
-
