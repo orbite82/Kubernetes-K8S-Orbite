@@ -85,102 +85,187 @@ Vamos dar uma olhada em cada componente individual associado com o servidor mest
 `etcd`
 
 ```
-Um dos componentes fundamentais que o Kubernetes precisa para funcionar é um armazenamento de configuração disponível globalmente. O projeto etcd, desenvolvido pelo time da CoreOS, é um armazenamento de chave-valor leve e distribuído, que pode ser configurado para se estender por vários nodes.
+Um dos componentes fundamentais que o Kubernetes precisa para funcionar é um armazenamento de 
+configuração disponível globalmente. O projeto etcd, desenvolvido pelo time da CoreOS, é um armazenamento 
+de chave-valor leve e distribuído, que pode ser configurado para se estender por vários nodes.
 
-O Kubernetes utiliza o etcd para armazenar dados de configuração que podem ser acessados por cada um dos nodes no cluster. Isso pode ser usado para descoberta de serviços e pode ajudar os componentes a se configurarem ou se reconfigurarem de acordo com informações atualizadas. Isso também ajuda a manter o estado do cluster com recursos como eleição de líder e bloqueio distribuído. Ao fornecer uma API HTTP/JSON simples, a interface para definir ou recuperar valores é muito direta.
+O Kubernetes utiliza o etcd para armazenar dados de configuração que podem ser acessados por cada um dos 
+nodes no cluster. Isso pode ser usado para descoberta de serviços e pode ajudar os componentes a se 
+configurarem ou se reconfigurarem de acordo com informações atualizadas. Isso também ajuda a manter o 
+estado do cluster com recursos como eleição de líder e bloqueio distribuído. Ao fornecer uma API HTTP/JSON 
+simples, a interface para definir ou recuperar valores é muito direta.
 
-Como a maioria dos outros componentes no plano de controle, o etcd pode ser configurado em um único servidor mestre ou, em cenários de produção, distribuído entre várias máquinas. O único requisito é que ele deve ser acessível via rede para cada uma das máquinas Kubernetes.
+Como a maioria dos outros componentes no plano de controle, o etcd pode ser configurado em um único 
+servidor mestre ou, em cenários de produção, distribuído entre várias máquinas. O único requisito é que ele 
+deve ser acessível via rede para cada uma das máquinas Kubernetes.
 ```
 `kube-apiserver`
 
 ```
-Um dos serviços mais importantes do servidor mestre é o servidor de API. Este é o principal ponto de contato do cluster todo, pois permite que um usuário configure cargas de trabalho e unidades organizacionais do Kubernetes. Ele também é responsável por certificar-se de que o armazenamento etcd e os detalhes dos serviços dos containers implantados estão de acordo. Ele age como uma ponte entre vários componentes para manter a saúde do cluster e disseminar informações e comandos.
+Um dos serviços mais importantes do servidor mestre é o servidor de API. Este é o principal ponto de 
+contato do cluster todo, pois permite que um usuário configure cargas de trabalho e unidades organizacionais 
+do Kubernetes. Ele também é responsável por certificar-se de que o armazenamento etcd e os detalhes dos 
+serviços dos containers implantados estão de acordo. Ele age como uma ponte entre vários componentes para 
+manter a saúde do cluster e disseminar informações e comandos.
 
-O servidor de API implementa uma interface RESTful, o que significa que várias ferramentas distintas e bibliotecas podem comunicar-se prontamente com ele. Um cliente chamado kubectl está disponível como um método padrão de interação com o cluster Kubernetes a partir de um computador local.
+O servidor de API implementa uma interface RESTful, o que significa que várias ferramentas distintas e 
+bibliotecas podem comunicar-se prontamente com ele. Um cliente chamado kubectl está disponível como um método 
+padrão de interação com o cluster Kubernetes a partir de um computador local.
 ```
 
 `kube-controller-manager`
 
 ```
-O controller manager é um serviço geral que tem muitas responsabilidades. Primeiramente, ele gerencia diferentes controladores que regulam o estado do cluster, gerencia o ciclo de vida das cargas de trabalho, e realiza tarefas rotineiras. Por exemplo, um controlador de replicação assegura que o número de réplicas (cópias idênticas) definidas para um pod corresponda ao número atualmente implantado no cluster. Os detalhes dessas operações são gravadas no etcd, onde o controller manager observa as alterações por meio do servidor da API.
+O controller manager é um serviço geral que tem muitas responsabilidades. Primeiramente, ele gerencia diferentes
+ controladores que regulam o estado do cluster, gerencia o ciclo de vida das cargas de trabalho, e realiza 
+ tarefas rotineiras. Por exemplo, um controlador de replicação assegura que o número de réplicas 
+ (cópias idênticas) definidas para um pod corresponda ao número atualmente implantado no cluster. 
+ Os detalhes dessas operações são gravadas no etcd, onde o controller manager observa as alterações por meio 
+ do servidor da API.
 
-Quando uma alteração é vista, o controlador lê as novas informações e implementa o procedimento que preenche o estado desejado. Isto pode envolver escalar uma aplicação para cima ou para baixo, ajustar endpoints, etc.
+Quando uma alteração é vista, o controlador lê as novas informações e implementa o procedimento que preenche o 
+estado desejado. Isto pode envolver escalar uma aplicação para cima ou para baixo, ajustar endpoints, etc.
 ```
 
 `kube-scheduler`
 
 ```
-O processo que de fato atribui cargas de trabalho a nodes específicos no cluster é o scheduler ou agendador. Este serviço lê os requisitos operacionais da carga de trabalho, analisa o ambiente de infraestrutura atual, e coloca o trabalho em um node ou nodes aceitáveis.
+O processo que de fato atribui cargas de trabalho a nodes específicos no cluster é o scheduler ou agendador. 
+Este serviço lê os requisitos operacionais da carga de trabalho, analisa o ambiente de infraestrutura atual, 
+e coloca o trabalho em um node ou nodes aceitáveis.
 
-O scheduler é responsável por rastrear a capacidade disponível em cada host para certificar-se de que as cargas de trabalho não estão agendadas para além dos recursos disponíveis. O scheduler deve saber a capacidade total bem como os recursos já alocados para cargas de trabalho existentes em cada servidor.
+O scheduler é responsável por rastrear a capacidade disponível em cada host para certificar-se de que as cargas 
+de trabalho não estão agendadas para além dos recursos disponíveis. O scheduler deve saber a capacidade total 
+bem como os recursos já alocados para cargas de trabalho existentes em cada servidor.
 ```
 
 `cloud-controller-manager`
 
 ```
-O Kubernetes pode ser implantado em muitos ambientes diferentes e pode interagir com vários provedores de infraestrutura para entender e gerenciar o estado dos recursos no cluster. Como o Kubernetes trabalha com representações genéricas de recursos como armazenamento anexável e balanceadores de carga, ele precisa de uma forma de mapear estes para os recursos reais fornecidos por provedores de nuvem heterogêneos.
+O Kubernetes pode ser implantado em muitos ambientes diferentes e pode interagir com vários provedores de 
+infraestrutura para entender e gerenciar o estado dos recursos no cluster. Como o Kubernetes trabalha com 
+representações genéricas de recursos como armazenamento anexável e balanceadores de carga, ele precisa de 
+uma forma de mapear estes para os recursos reais fornecidos por provedores de nuvem heterogêneos.
 
-Os cloud controller managers ou gerentes controladores de nuvem agem como a cola que permite o Kubernetes interagir com provedores com diferentes capacidades, recursos, e APIs enquanto mantém construções relativamente genéricas internamente. Isto permite ao Kubernetes atualizar suas informações de estado de acordo com as informações recolhidas a partir do provedor de nuvem, ajustar recursos de nuvem conforme as mudanças sejam necessárias no sistema, e criar e usar serviços de nuvem adicionais para satisfazer os requisitos de trabalho submetidos ao cluster.
+Os cloud controller managers ou gerentes controladores de nuvem agem como a cola que permite o Kubernetes 
+interagir com provedores com diferentes capacidades, recursos, e APIs enquanto mantém construções relativamente 
+genéricas internamente. Isto permite ao Kubernetes atualizar suas informações de estado de acordo com as 
+informações recolhidas a partir do provedor de nuvem, ajustar recursos de nuvem conforme as mudanças sejam 
+necessárias no sistema, e criar e usar serviços de nuvem adicionais para satisfazer os requisitos de 
+trabalho submetidos ao cluster.
 ```
 
 * Componentes do Servidor de Nodes
 
 ```
-No Kubernetes, os servidores que realizam trabalho através da execução de containers são conhecidos como nodes. Os servidores de nodes têm alguns requisitos necessários para se comunicar com os componentes do mestre, configuração da rede do container, e execução da carga de trabalho real atribuída a eles.
+No Kubernetes, os servidores que realizam trabalho através da execução de containers são conhecidos como nodes. 
+Os servidores de nodes têm alguns requisitos necessários para se comunicar com os componentes do mestre, 
+configuração da rede do container, e execução da carga de trabalho real atribuída a eles.
 ```
 
 * Um Runtime de Container
 
 ```
-O primeiro componente que cada node deve ter é um runtime de container. Geralmente, este requisito é satisfeito através da instalação e execução do Docker, mas alternativas como o rkt e o runc também estão disponíveis.
+O primeiro componente que cada node deve ter é um runtime de container. Geralmente, este requisito é 
+satisfeito através da instalação e execução do Docker, mas alternativas como o rkt e o runc também 
+estão disponíveis.
 
-O runtime de container é responsável por iniciar e gerenciar containers, aplicações encapsuladas em um ambiente operacional relativamente isolado, mas leve. Cada unidade de trabalho no cluster é, em seu nível básico, implementada como um ou mais containers que devem ser implantados. O runtime de container em cada node é o componente que finalmente executa os containers definidos na carga de trabalho submetida ao cluster.
+O runtime de container é responsável por iniciar e gerenciar containers, aplicações encapsuladas em um 
+ambiente operacional relativamente isolado, mas leve. Cada unidade de trabalho no cluster é, em seu nível básico, 
+implementada como um ou mais containers que devem ser implantados. O runtime de container em cada node é o 
+componente que finalmente executa os containers definidos na carga de trabalho submetida ao cluster.
 ```
 
 `kubelet`
 
 ```
-O principal ponto de contato de cada node com o grupo de cluster é um pequeno serviço chamado kubelet. Este serviço é responsável por replicar informações de e para os serviços do plano de controle, bem como interagir com o armazenamento etcd para ler detalhes de configuração ou gravar novos valores.
+O principal ponto de contato de cada node com o grupo de cluster é um pequeno serviço chamado kubelet. 
+Este serviço é responsável por replicar informações de e para os serviços do plano de controle, bem como 
+interagir com o armazenamento etcd para ler detalhes de configuração ou gravar novos valores.
 
-O serviço kubelet comunica-se com os componentes do mestre para autenticar no cluster e receber comandos e trabalho. O trabalho é recebido na forma de um manifesto que define a carga de trabalho e os parâmetros operacionais. O processo do kubelet então assume a responsabilidade pela manutenção do estado do trabalho no servidor de node. Ele controla o runtime de container para lançar ou destruir containers quando necessário.
+O serviço kubelet comunica-se com os componentes do mestre para autenticar no cluster e receber comandos e 
+trabalho. O trabalho é recebido na forma de um manifesto que define a carga de trabalho e os parâmetros 
+operacionais. O processo do kubelet então assume a responsabilidade pela manutenção do estado do trabalho 
+no servidor de node. Ele controla o runtime de container para lançar ou destruir containers quando necessário.
 ```
 
 `kube-proxy`
 
 ```
-Para gerenciar sub-redes de hosts individuais e tornar os serviços disponíveis para outros componentes, um pequeno serviço de proxy chamado kube-proxy é executado em cada servidor de node. Este processo encaminha requisições aos containers corretos, e é geralmente responsável por certificar-se de que o ambiente de rede é previsível e acessível, mas isolado quando apropriado.
+Para gerenciar sub-redes de hosts individuais e tornar os serviços disponíveis para outros componentes, 
+um pequeno serviço de proxy chamado kube-proxy é executado em cada servidor de node. Este processo encaminha 
+requisições aos containers corretos, e é geralmente responsável por certificar-se de que o ambiente de rede é 
+previsível e acessível, mas isolado quando apropriado.
 ```
 
 * Objetos e Cargas de Trabalho do Kubernetes
 
 ```
-Enquanto os containers são o mecanismo subjacente utilizado para implantar aplicações, o Kubernetes usa camadas adicionais de abstração sobre a interface do container para fornecer escala, resiliência, e recursos de gerenciamento do ciclo de vida. Em vez de gerenciar os containers diretamente, os usuários definem e interagem com instâncias compostas de várias primitivas fornecidas pelo modelo de objeto do Kubernetes. Analisaremos os diferentes tipos de objetos que podem ser usados para definir essas cargas de trabalho abaixo.
+Enquanto os containers são o mecanismo subjacente utilizado para implantar aplicações, o Kubernetes usa camadas 
+adicionais de abstração sobre a interface do container para fornecer escala, resiliência, e recursos de 
+gerenciamento do ciclo de vida. Em vez de gerenciar os containers diretamente, os usuários definem e interagem 
+com instâncias compostas de várias primitivas fornecidas pelo modelo de objeto do Kubernetes. Analisaremos 
+os diferentes tipos de objetos que podem ser usados para definir essas cargas de trabalho abaixo.
 ```
 
 `Pods`
 
 ```
-Um pod é a unidade mais básica com a qual o Kubernetes lida. Os containers propriamente ditos não são atribuídos a hosts. Em vez disso, um ou mais containers fortemente acoplados são encapsulados em um objeto chamado de pod.
+Um pod é a unidade mais básica com a qual o Kubernetes lida. Os containers propriamente ditos não são atribuídos 
+a hosts. Em vez disso, um ou mais containers fortemente acoplados são encapsulados em um objeto chamado de pod.
 
-Um pod geralmente representa um ou mais containers que devem ser controlados com uma única aplicação. Pods consistem em containers que operam em conjunto, compartilham um ciclo de vida, e devem sempre passar pelo scheduling no mesmo node. Eles são gerenciados inteiramente como uma unidade e compartilham seu ambiente, volumes, e espaço de IP. A despeito de sua implementação em container, você deve geralmente pensar no pod como uma aplicação única, monolítica, para melhor conceituar como o cluster gerenciará os recursos e o agendamento do pod.
+Um pod geralmente representa um ou mais containers que devem ser controlados com uma única aplicação. 
+Pods consistem em containers que operam em conjunto, compartilham um ciclo de vida, e devem sempre passar 
+pelo scheduling no mesmo node. Eles são gerenciados inteiramente como uma unidade e compartilham seu ambiente, 
+volumes, e espaço de IP. A despeito de sua implementação em container, você deve geralmente pensar no pod como 
+uma aplicação única, monolítica, para melhor conceituar como o cluster gerenciará os recursos e o 
+agendamento do pod.
 
-Geralmente, os pods consistem de um container principal que satisfaz o propósito geral da carga de trabalho e, opcionalmente, de alguns containers auxiliares que facilitam tarefas estreitamente relacionadas. Estes são programas que se beneficiam de serem executados e gerenciados em seus próprios containers, mas estão intimamente ligados ao aplicativo principal. Por exemplo, um pod pode ter um container executando o servidor de aplicação primário e um container auxiliar puxando arquivos para o sistema de arquivos compartilhado, quando são detectadas mudanças em um repositório externo. O escalonamento horizontal é geralmente desencorajado no nível do pod porque existem outros objetos de alto nível mais adequados para a tarefa.
+Geralmente, os pods consistem de um container principal que satisfaz o propósito geral da carga de trabalho e, 
+opcionalmente, de alguns containers auxiliares que facilitam tarefas estreitamente relacionadas. 
+Estes são programas que se beneficiam de serem executados e gerenciados em seus próprios containers, mas estão 
+intimamente ligados ao aplicativo principal. Por exemplo, um pod pode ter um container executando o servidor de 
+aplicação primário e um container auxiliar puxando arquivos para o sistema de arquivos compartilhado, quando são 
+detectadas mudanças em um repositório externo. O escalonamento horizontal é geralmente desencorajado no nível do 
+pod porque existem outros objetos de alto nível mais adequados para a tarefa.
 
-Geralmente, os usuários não devem gerenciar os próprios pods, porque eles não fornecem alguns dos recursos geralmente necessários em aplicações (como gerenciamento sofisticado do ciclo de vida e escalonamento). Em vez disso, os usuários são encorajados a trabalhar com objetos de alto nível que usam modelos de pod ou pods como componentes de base, mas que implementam funcionalidades adicionais.
+Geralmente, os usuários não devem gerenciar os próprios pods, porque eles não fornecem alguns dos recursos g
+eralmente necessários em aplicações (como gerenciamento sofisticado do ciclo de vida e escalonamento). 
+Em vez disso, os usuários são encorajados a trabalhar com objetos de alto nível que usam modelos de pod ou pods 
+como componentes de base, mas que implementam funcionalidades adicionais.
 ```
 
 * Controladores de Replicação e Conjuntos de Replicação
 
 ```
-Frequentemente, ao trabalhar com o Kubernetes, em vez de trabalhar com pods únicos, você estará gerenciando grupos de pods idênticos e replicados. Estes são criados a partir de modelos de pod e podem ser escalados horizontalmente por controladores conhecidos como Replication Controllers e Replication Sets.
+Frequentemente, ao trabalhar com o Kubernetes, em vez de trabalhar com pods únicos, você estará gerenciando 
+grupos de pods idênticos e replicados. Estes são criados a partir de modelos de pod e podem ser escalados 
+horizontalmente por controladores conhecidos como Replication Controllers e Replication Sets.
 
-Um Replication Controller ou controlador de replicação é um objeto que define um modelo de pod e os parâmetros de controle para escalar réplicas idênticas ou decrementar o número de cópias em execução. Esta é uma maneira fácil de distribuir a carga e aumentar a disponibilidade nativamente dentro do Kubernetes. O replication controller sabe como criar novos pods quando necessário, porque um modelo que se assemelha a uma definição de pod está embutido dentro da configuração dele.
+Um Replication Controller ou controlador de replicação é um objeto que define um modelo de pod e os parâmetros 
+de controle para escalar réplicas idênticas ou decrementar o número de cópias em execução. Esta é uma maneira 
+fácil de distribuir a carga e aumentar a disponibilidade nativamente dentro do Kubernetes. O replication 
+controller sabe como criar novos pods quando necessário, porque um modelo que se assemelha a uma definição de 
+pod está embutido dentro da configuração dele.
 
-O replication controller é responsável por assegurar que o número de pods implantados no cluster corresponde ao número de pods em sua configuração. Se um pod ou host subjacente falhar, o controlador irá iniciar novos pods para compensar. Se o número de réplicas na configuração do controlador se alterar, o controlador inicializa ou destrói containers para corresponder ao número desejado. Os replication controllers também podem realizar atualizações contínuas passando um conjunto de pods para uma nova versão. um a um, minimizando o impacto na disponibilidade da aplicação.
+O replication controller é responsável por assegurar que o número de pods implantados no cluster corresponde 
+ao número de pods em sua configuração. Se um pod ou host subjacente falhar, o controlador irá iniciar novos 
+ods para compensar. Se o número de réplicas na configuração do controlador se alterar, o controlador inicializa 
+ou destrói containers para corresponder ao número desejado. Os replication controllers também podem realizar 
+atualizações contínuas passando um conjunto de pods para uma nova versão. um a um, minimizando o impacto na 
+disponibilidade da aplicação.
 
-Replication Sets ou Conjuntos de Replicação são uma iteração no design do replication controller com maior flexibilidade em como o controlador identifica os pods que ele deve gerenciar. Os replication sets estão começando a substituir os replication controllers por causa de seus recursos de seleção de réplicas que são maiores, mas eles não são capazes de fazer atualizações contínuas para colocar os backends em uma nova versão como os replication controllers fazem. Em vez disso, os replication sets destinam-se a ser usados dentro de unidades adicionais de nível superior que fornecem essa funcionalidade.
+Replication Sets ou Conjuntos de Replicação são uma iteração no design do replication controller com maior 
+flexibilidade em como o controlador identifica os pods que ele deve gerenciar. Os replication sets estão 
+começando a substituir os replication controllers por causa de seus recursos de seleção de réplicas que são 
+maiores, mas eles não são capazes de fazer atualizações contínuas para colocar os backends em uma nova versão
+como os replication controllers fazem. Em vez disso, os replication sets destinam-se a ser usados dentro de
+unidades adicionais de nível superior que fornecem essa funcionalidade.
 
-Assim como os pods, tanto os replication controllers quanto os replication sets raramente são as unidades com as quais você trabalhará diretamente. Enquanto eles constroem-se em cima do projeto do pod para adicionar escalonamento horizontal e garantias de confiabilidade, eles não possuem alguns dos recursos de gerenciamento de ciclo de vida refinados encontrados em objetos mais complexos.
+Assim como os pods, tanto os replication controllers quanto os replication sets raramente são as unidades com
+as quais você trabalhará diretamente. Enquanto eles constroem-se em cima do projeto do pod para adicionar 
+escalonamento horizontal e garantias de confiabilidade, eles não possuem alguns dos recursos de gerenciamento 
+de ciclo de vida refinados encontrados em objetos mais complexos.
 ```
 
 `Deployments`
