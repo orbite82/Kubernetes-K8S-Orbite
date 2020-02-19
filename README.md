@@ -1481,5 +1481,130 @@ spec:
       memory: 128Mi
     type: Container
 
+vagrant@k8s-master:~$ kubectl create -f my_limited_namespace.yaml -n orbitex
+limitrange/limited-resources created
+
+
+vagrant@k8s-master:~$ kubectl get limitranges -n orbitex
+NAME                CREATED AT
+limited-resources   2020-02-18T14:46:33Z
+
+vagrant@k8s-master:~$ kubectl describe limitranges -n orbitex limited-resources
+Name:       limited-resources
+Namespace:  orbitex
+Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---  ---  ---------------  -------------  -----------------------
+Container   cpu       -    -    500m             1              -
+Container   memory    -    -    128Mi            256Mi          -
+
 ```
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: limited-pod
+  namespace: orbitex2
+spec:
+  containers:
+  - name: my-container
+    image: nginx
+
+```
+`OU`
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: limited-pod
+spec:
+  containers:
+  - name: my-container
+    image: nginx
+  
+```
+---
+---
+# Taint
+
+```
+vagrant@k8s-master:~$ kubectl get nodes
+NAME         STATUS   ROLES    AGE   VERSION
+k8s-master   Ready    master   12d   v1.17.2
+node-1       Ready    <none>   12d   v1.17.2
+node-2       Ready    <none>   12d   v1.17.2
+
+vagrant@k8s-master:~$ kubectl describe node k8s-master
+
+Name:               k8s-master
+Roles:              master
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=k8s-master
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/master=
+Annotations:        kubeadm.alpha.kubernetes.io/cri-socket: /var/run/dockershim.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.16.1.10/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.235.192
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Wed, 05 Feb 2020 17:23:12 +0000
+Taints:             node-role.kubernetes.io/master:NoSchedule
+
+```
+
+`sem taint`
+
+```
+vagrant@k8s-master:~$ kubectl describe node node-1
+Name:               node-1
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node-1
+                    kubernetes.io/os=linux
+Annotations:        kubeadm.alpha.kubernetes.io/cri-socket: /var/run/dockershim.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.16.1.11/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.84.128
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Wed, 05 Feb 2020 17:26:57 +0000
+Taints:             <none>
+
+```
+
+```
+vagrant@k8s-master:~$ kubectl create -f deployment_limited.yaml
+deployment.apps/my-nginx created
+
+vagrant@k8s-master:~$ kubectl get deployments. --all-namespaces
+NAMESPACE     NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+default       my-nginx                  10/10   10           10          30s
+kube-system   calico-kube-controllers   1/1     1            1           12d
+kube-system   coredns                   2/2     2            2           12d
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+my-nginx-75d484d94b-6jbx7   1/1     Running   0          74s   192.168.84.131   node-1   <none>           <none>
+my-nginx-75d484d94b-968d5   1/1     Running   0          74s   192.168.84.130   node-1   <none>           <none>
+my-nginx-75d484d94b-b4vz2   1/1     Running   0          74s   192.168.247.59   node-2   <none>           <none>
+my-nginx-75d484d94b-clpnk   1/1     Running   0          74s   192.168.84.133   node-1   <none>           <none>
+my-nginx-75d484d94b-dtpz2   1/1     Running   0          74s   192.168.84.190   node-1   <none>           <none>
+my-nginx-75d484d94b-ks4l5   1/1     Running   0          74s   192.168.84.191   node-1   <none>           <none>
+my-nginx-75d484d94b-lztkf   1/1     Running   0          74s   192.168.247.63   node-2   <none>           <none>
+my-nginx-75d484d94b-mk5vd   1/1     Running   0          74s   192.168.247.60   node-2   <none>           <none>
+my-nginx-75d484d94b-r4svl   1/1     Running   0          74s   192.168.247.61   node-2   <none>           <none>
+my-nginx-75d484d94b-xcggs   1/1     Running   0          74s   192.168.247.62   node-2   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl scale --replicas=4 deployment my-nginx
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+my-nginx-75d484d94b-b4vz2   1/1     Running   0          3m14s   192.168.247.59   node-2   <none>           <none>
+my-nginx-75d484d94b-dtpz2   1/1     Running   0          3m14s   192.168.84.190   node-1   <none>           <none>
+my-nginx-75d484d94b-ks4l5   1/1     Running   0          3m14s   192.168.84.191   node-1   <none>           <none>
+my-nginx-75d484d94b-mk5vd   1/1     Running   0          3m14s   192.168.247.60   node-2   <none>           <none>
 
