@@ -9,69 +9,77 @@ Kubernetes é um poderoso sistema open-source, inicialmente desenvolvido pelo Go
 de aplicações em container em um ambiente clusterizado. Ele visa fornecer melhores maneiras de gerenciar 
 componentes e serviços relacionados e distribuídos em diversas infraestruturas.
 
-Neste guia, vamos discutir alguns conceitos básicos do Kubernetes. Vamos falar sobre a arquitetura do sistema,
- os problemas que ele resolve, e o modelo que ele utiliza para tratar deployments em container e escalabilidade.
+Neste guia, vamos discutir alguns conceitos básicos do Kubernetes. Vamos falar sobre a arquitetura do 
+sistema, os problemas que ele resolve, e o modelo que ele utiliza para tratar deployments em container 
+e escalabilidade.
 ```
 
 * O que é o Kubernetes?
 
 ```
-Kubernetes, em seu nível mais básico, é um sistema para executar e coordenar aplicações em container através 
-de um cluster de máquinas. É uma plataforma desenhada para gerenciar completamente o ciclo de aplicações e 
-serviços em container utilizando métodos que fornecem previsibilidade, escalabilidade, e alta disponibilidade.
+Kubernetes, em seu nível mais básico, é um sistema para executar e coordenar aplicações em container 
+através de um cluster de máquinas. É uma plataforma desenhada para gerenciar completamente o ciclo de 
+aplicações e serviços em container utilizando métodos que fornecem previsibilidade, escalabilidade, 
+e alta disponibilidade.
 
-Como usuário do Kubernetes, você pode definir como as suas aplicações devem rodar e as maneiras pelas quais 
-elas devem ser capazes de interagir com outras aplicações ou com o mundo exterior. Você pode escalar seus 
-serviços para cima ou para baixo, executar atualizações contínuas elegantemente, e trocar tráfego entre diferentes 
-versões de suas aplicações para testar recursos ou reverter deployments problemáticos. O Kubernetes fornece 
-interfaces e primitivas de plataformas combináveis que lhe permitem definir e gerenciar suas aplicações com alto 
+Como usuário do Kubernetes, você pode definir como as suas aplicações devem rodar e as maneiras pelas 
+quais elas devem ser capazes de interagir com outras aplicações ou com o mundo exterior. Você pode 
+escalar seus serviços para cima ou para baixo, executar atualizações contínuas elegantemente, e trocar 
+tráfego entre diferentes versões de suas aplicações para testar recursos ou reverter deployments 
+problemáticos. O Kubernetes fornece interfaces e primitivas de plataformas combináveis que lhe permitem 
+definir e gerenciar suas aplicações com alto 
 grau de flexibilidade, potência, e confiabilidade.
 ```
 
 * Arquitetura do Kubernetes
 
 ```
-Para entender como o Kubernetes é capaz de fornecer esses recursos, é útil ter uma noção de como ele é projetado
-e organizado em alto nível. O Kubernetes pode ser visto como um sistema construído em camadas, com cada camada 
-mais alta abstraindo a complexidade encontrada nos níveis mais baixos.
+Para entender como o Kubernetes é capaz de fornecer esses recursos, é útil ter uma noção de como 
+ele é projetado e organizado em alto nível. O Kubernetes pode ser visto como um sistema construído em 
+camadas, com cada camada mais alta abstraindo a complexidade encontrada nos níveis mais baixos.
 
 Em sua base, o Kubernetes reúne máquinas físicas ou virtuais individuais em um cluster usando uma rede 
-compartilhada para comunicar entre cada servidor. Esse cluster é a plataforma física onde todos os componentes,
-recursos, e cargas de trabalho do Kubernetes são configurados.
+compartilhada para comunicar entre cada servidor. Esse cluster é a plataforma física onde todos os 
+componentes, recursos, e cargas de trabalho do Kubernetes são configurados.
 
-Cada uma das máquinas do cluster recebe um papel dentro do ecossistema do Kubernetes. Um servidor (ou um pequeno 
-grupo nos deployments de alta disponibilidade) funciona como o servidor mestre. Esse servidor age como um gateway 
-e um cérebro para o cluster, expondo uma API para usuários e clientes, verificando a saúde de outros servidores, 
-decidindo a melhor forma de dividir e atribuir trabalho (conhecido como “scheduling”), e orquestrando a comunicação
-entre outros componentes. O servidor mestre age como o primeiro ponto de contato com o cluster e é responsável 
-pela maior parte da lógica centralizada que o Kubernetes fornece.
+Cada uma das máquinas do cluster recebe um papel dentro do ecossistema do Kubernetes. Um servidor 
+(ou um pequeno grupo nos deployments de alta disponibilidade) funciona como o servidor mestre. 
+Esse servidor age como um gateway e um cérebro para o cluster, expondo uma API para usuários e clientes, 
+verificando a saúde de outros servidores, decidindo a melhor forma de dividir e atribuir trabalho 
+(conhecido como “scheduling”), e orquestrando a comunicação entre outros componentes. O servidor mestre 
+age como o primeiro ponto de contato com o cluster e é responsável pela maior parte da lógica 
+centralizada que o Kubernetes fornece.
 
-As outras máquinas no cluster são designadas como nodes ou nós: servidores responsáveis por aceitar e executar 
-cargas de trabalho utilizando recursos locais e externos. Para ajudar no isolamento, gerenciamento, e flexibilidade, 
-o Kubernetes executa aplicações e serviços em containers, então cada node precisa estar equipado com o runtime de 
-container (como o Docker ou rkt). O node recebe instruções de trabalho do servidor mestre e cria ou destrói 
-containers de acordo, ajustando as regras de rede para rotear e encaminhar o tráfego apropriadamente.
+As outras máquinas no cluster são designadas como nodes ou nós: servidores responsáveis por aceitar 
+e executar cargas de trabalho utilizando recursos locais e externos. Para ajudar no isolamento, 
+gerenciamento, e flexibilidade, o Kubernetes executa aplicações e serviços em containers, então 
+cada node precisa estar equipado com o runtime de container (como o Docker ou rkt). O node recebe 
+instruções de trabalho do servidor mestre e cria ou destrói containers de acordo, ajustando as 
+regras de rede para rotear e encaminhar o tráfego apropriadamente.
 
-Como mencionado acima, as aplicações e serviços propriamente ditos estão executando no cluster dentro de containers. 
-Os componentes subjacentes certificam-se de que o estado desejado das aplicações correspondam ao estado real do cluster. 
-Os usuários interagem com o cluster através da comunicação com a API principal do servidor, seja diretamente ou através 
-de clientes e bibliotecas. Para iniciar uma aplicação ou serviço, um plano declarativo é submetido em JSON ou YAML 
-definindo o que criar e como ele deve ser gerenciado. O servidor mestre pega então o plano e descobre como executá-lo 
-na infraestrutura através do exame dos requisitos e o estado atual do sistema. Esse grupo de aplicativos definidos pelo 
-usuário, em execução de acordo com um plano especificado, representa a camada final do Kubernetes.
+Como mencionado acima, as aplicações e serviços propriamente ditos estão executando no cluster dentro de 
+containers. Os componentes subjacentes certificam-se de que o estado desejado das aplicações correspondam 
+ao estado real do cluster. Os usuários interagem com o cluster através da comunicação com a API principal 
+do servidor, seja diretamente ou através 
+de clientes e bibliotecas. Para iniciar uma aplicação ou serviço, um plano declarativo é submetido em 
+JSON ou YAML definindo o que criar e como ele deve ser gerenciado. O servidor mestre pega então o plano 
+e descobre como executá-lo na infraestrutura através do exame dos requisitos e o estado atual do sistema. 
+Esse grupo de aplicativos definidos pelo usuário, em execução de acordo com um plano especificado, 
+representa a camada final do Kubernetes.
 ```
 
 * Componentes do Servidor Mestre
 
 ```
-Como descrito acima, o servidor mestre age como o plano de controle primário para os clusters do Kubernetes. Ele serve 
-como o principal ponto de contato para administradores e usuários, e também fornece muitos sistemas em todo o cluster 
-para os nodes de trabalho relativamente pouco sofisticados. No geral, os componentes no servidor mestre trabalham juntos 
-para aceitar solicitações de usuários, determinar as melhores maneiras de agendar containers de carga de trabalho, 
-autenticar clientes e nodes, ajustar a rede de todo o cluster, e gerenciar as responsabilidades de escalabilidade e 
-verificação de saúde.
+Como descrito acima, o servidor mestre age como o plano de controle primário para os clusters do 
+Kubernetes. Ele serve como o principal ponto de contato para administradores e usuários, e também fornece 
+muitos sistemas em todo o cluster para os nodes de trabalho relativamente pouco sofisticados. No geral, 
+os componentes no servidor mestre trabalham juntos para aceitar solicitações de usuários, determinar as 
+melhores maneiras de agendar containers de carga de trabalho, autenticar clientes e nodes, ajustar a rede 
+de todo o cluster, e gerenciar as responsabilidades de escalabilidade e verificação de saúde.
 
-Estes componentes podem ser instalados em uma única máquina ou distribuídos por vários servidores. Vamos dar uma olhada em cada componente individual associado com o servidor mestre nesta seção.
+Estes componentes podem ser instalados em uma única máquina ou distribuídos por vários servidores. 
+Vamos dar uma olhada em cada componente individual associado com o servidor mestre nesta seção.
 ```
 
 `etcd`
