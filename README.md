@@ -2509,6 +2509,105 @@ Taints:             <none>
 
 ```
 
+# Deployment
+
+```
+vagrant@k8s-master:~$ vim first-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+    app: orbite
+  name: first-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+        dc: Spanish
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx2
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+
+
+vagrant@k8s-master:~$ kubectl create -f first-deployment.yaml
+deployment.apps/first-deployment created
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+first-deployment      1/1     1            1           5s
+
+```
+vagrant@k8s-master:~$ vim next-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+    app: orbite
+  name: next-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+        dc: Brazil
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx2
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+
+
+vagrant@k8s-master:~$ kubectl create -f next-deployment.yaml
+deployment.apps/next-deployment created
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+first-deployment   1/1     1            1           6m49s
+next-deployment    1/1     1            1           82s
+
+```
+
+
+
 
 
 
