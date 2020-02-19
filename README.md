@@ -1602,9 +1602,288 @@ my-nginx-75d484d94b-xcggs   1/1     Running   0          74s   192.168.247.62   
 vagrant@k8s-master:~$ kubectl scale --replicas=4 deployment my-nginx
 
 vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+my-nginx-75d484d94b-b4vz2   1/1     Running   1          21h   192.168.247.2    node-2   <none>           <none>
+my-nginx-75d484d94b-dtpz2   1/1     Running   1          21h   192.168.84.129   node-1   <none>           <none>
+my-nginx-75d484d94b-ks4l5   1/1     Running   1          21h   192.168.84.132   node-1   <none>           <none>
+my-nginx-75d484d94b-mk5vd   1/1     Running   1          21h   192.168.247.1    node-2   <none>           <none>
+vagrant@k8s-master:~$ kubectl taint node node-1 key1=value1:NoSchedule
+node/node-1 tainted
+
+vagrant@k8s-master:~$ kubectl describe node node-1
+Name:               node-1
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node-1
+                    kubernetes.io/os=linux
+Annotations:        kubeadm.alpha.kubernetes.io/cri-socket: /var/run/dockershim.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.16.1.11/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.84.128
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Wed, 05 Feb 2020 17:26:57 +0000
+Taints:             key1=value1:NoSchedule
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+my-nginx-75d484d94b-7nxqk   1/1     Running   0          63s   192.168.247.8    node-2   <none>           <none>
+my-nginx-75d484d94b-b4vz2   1/1     Running   1          22h   192.168.247.2    node-2   <none>           <none>
+my-nginx-75d484d94b-dtpz2   1/1     Running   1          22h   192.168.84.129   node-1   <none>           <none>
+my-nginx-75d484d94b-dtqvp   0/1     Pending   0          63s   <none>           <none>   <none>           <none>
+my-nginx-75d484d94b-hfpzl   1/1     Running   0          63s   192.168.247.4    node-2   <none>           <none>
+my-nginx-75d484d94b-ks4l5   1/1     Running   1          22h   192.168.84.132   node-1   <none>           <none>
+my-nginx-75d484d94b-mk5vd   1/1     Running   1          22h   192.168.247.1    node-2   <none>           <none>
+my-nginx-75d484d94b-n9bqv   1/1     Running   0          63s   192.168.247.5    node-2   <none>           <none>
+my-nginx-75d484d94b-tfd9m   1/1     Running   0          63s   192.168.247.3    node-2   <none>           <none>
+my-nginx-75d484d94b-vnz5q   1/1     Running   0          63s   192.168.247.6    node-2   <none>           <none>
+
+vagrant@k8s-master:~$ vim deployment_limited.yaml 
+
+`Obs:` Remover o resources, fica assim:
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "2"
+  creationTimestamp: "2020-02-18T15:04:06Z"
+  generation: 4
+  labels:
+    run: nginx
+  name: my-nginx
+  namespace: default
+  resourceVersion: "952860"
+  selfLink: /apis/apps/v1/namespaces/default/deployments/my-nginx
+  uid: fe8b4879-0e25-4c1e-9edc-6f9b253b9325
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 10
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      run: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80        
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 10
+  conditions:
+  - lastTransitionTime: "2020-02-19T13:03:39Z"
+    lastUpdateTime: "2020-02-19T13:03:39Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2020-02-18T15:04:06Z"
+    lastUpdateTime: "2020-02-19T13:13:00Z"
+    message: ReplicaSet "my-nginx-5578584966" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 4
+  readyReplicas: 10
+  replicas: 10
+  updatedReplicas: 10
+
+vagrant@k8s-master:~$ kubectl edit deployments. my-nginx
+deployment.apps/my-nginx edited
+
+vagrant@k8s-master:~$ kubectl get pod
+NAME                        READY   STATUS              RESTARTS   AGE
+my-nginx-5578584966-d8stt   0/1     ContainerCreating   0          8s
+my-nginx-5578584966-hxqhz   0/1     ContainerCreating   0          2s
+my-nginx-5578584966-k72rq   1/1     Running             0          8s
+my-nginx-5578584966-mj57s   0/1     ContainerCreating   0          8s
+my-nginx-5578584966-phzc2   0/1     ContainerCreating   0          8s
+my-nginx-5578584966-vxbdw   0/1     ContainerCreating   0          8s
+my-nginx-75d484d94b-7nxqk   0/1     Terminating         0          8m52s
+my-nginx-75d484d94b-b4vz2   1/1     Running             1          22h
+my-nginx-75d484d94b-dtpz2   1/1     Running             1          22h
+my-nginx-75d484d94b-hfpzl   1/1     Running             0          8m52s
+my-nginx-75d484d94b-ks4l5   1/1     Running             1          22h
+my-nginx-75d484d94b-mk5vd   1/1     Running             1          22h
+my-nginx-75d484d94b-n9bqv   1/1     Running             0          8m52s
+my-nginx-75d484d94b-tfd9m   1/1     Running             0          8m52s
+my-nginx-75d484d94b-vnz5q   0/1     Terminating         0          8m52s
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   8/10    10           8           22h
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   9/10    10           9           22h
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   10/10   10           10          22h
+
+```
+
+* Resultado final
+
+```
+vagrant@k8s-master:~$ kubectl get pods -o wide
 NAME                        READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
-my-nginx-75d484d94b-b4vz2   1/1     Running   0          3m14s   192.168.247.59   node-2   <none>           <none>
-my-nginx-75d484d94b-dtpz2   1/1     Running   0          3m14s   192.168.84.190   node-1   <none>           <none>
-my-nginx-75d484d94b-ks4l5   1/1     Running   0          3m14s   192.168.84.191   node-1   <none>           <none>
-my-nginx-75d484d94b-mk5vd   1/1     Running   0          3m14s   192.168.247.60   node-2   <none>           <none>
+my-nginx-5578584966-4pbtb   1/1     Running   0          4m59s   192.168.247.20   node-2   <none>           <none>
+my-nginx-5578584966-d8stt   1/1     Running   0          5m17s   192.168.247.11   node-2   <none>           <none>
+my-nginx-5578584966-hxqhz   1/1     Running   0          5m11s   192.168.247.15   node-2   <none>           <none>
+my-nginx-5578584966-jj8tm   1/1     Running   0          5m8s    192.168.247.13   node-2   <none>           <none>
+my-nginx-5578584966-jt99x   1/1     Running   0          5m1s    192.168.247.16   node-2   <none>           <none>
+my-nginx-5578584966-k72rq   1/1     Running   0          5m17s   192.168.247.7    node-2   <none>           <none>
+my-nginx-5578584966-mj57s   1/1     Running   0          5m17s   192.168.247.9    node-2   <none>           <none>
+my-nginx-5578584966-phzc2   1/1     Running   0          5m17s   192.168.247.14   node-2   <none>           <none>
+my-nginx-5578584966-svlv2   1/1     Running   0          5m5s    192.168.247.12   node-2   <none>           <none>
+my-nginx-5578584966-vxbdw   1/1     Running   0          5m17s   192.168.247.10   node-2   <none>           <none>
+
+```
+* Removendo exemplo e reconstruindo e testando `Taint`:
+
+```
+vagrant@k8s-master:~$ kubectl delete deployments. my-nginx
+deployment.apps "my-nginx" deleted
+
+vagrant@k8s-master:~$ kubectl taint node node-1 key1=NoSchedule-
+node/node-1 untainted
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    run: nginx
+  name: my-nginx
+  namespace: default
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+
+vagrant@k8s-master:~$ kubectl create -f deployment_no_limited.yaml
+deployment.apps/my-nginx created
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS              RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+my-nginx-5578584966-2fvt9   0/1     ContainerCreating   0          4s    <none>   node-1   <none>           <none>
+my-nginx-5578584966-4s4bq   0/1     ContainerCreating   0          4s    <none>   node-2   <none>           <none>
+my-nginx-5578584966-k5wjw   0/1     ContainerCreating   0          4s    <none>   node-1   <none>           <none>
+my-nginx-5578584966-ld57k   0/1     ContainerCreating   0          4s    <none>   node-2   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl get deployments.
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+my-nginx   4/4     4            4           40s
+
+vagrant@k8s-master:~$ man hier
+man: can't set the locale; make sure $LC_* and $LANG are correct
+
+vagrant@k8s-master:~$ kubectl taint node node-1 key1=value1:NoSchedule
+node/node-1 tainted
+
+vagrant@k8s-master:~$ kubectl scale --replicas=10 deployment my-nginx
+deployment.apps/my-nginx scaled
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+my-nginx-5578584966-2fvt9   1/1     Running   0          6m19s   192.168.84.135   node-1   <none>           <none>
+my-nginx-5578584966-4s4bq   1/1     Running   0          6m19s   192.168.247.25   node-2   <none>           <none>
+my-nginx-5578584966-6czh6   1/1     Running   0          21s     192.168.247.23   node-2   <none>           <none>
+my-nginx-5578584966-btdgk   1/1     Running   0          21s     192.168.247.31   node-2   <none>           <none>
+my-nginx-5578584966-dqgmz   1/1     Running   0          21s     192.168.247.30   node-2   <none>           <none>
+my-nginx-5578584966-k2wwc   1/1     Running   0          21s     192.168.247.24   node-2   <none>           <none>
+my-nginx-5578584966-k5wjw   1/1     Running   0          6m19s   192.168.84.138   node-1   <none>           <none>
+my-nginx-5578584966-ld57k   1/1     Running   0          6m19s   192.168.247.26   node-2   <none>           <none>
+my-nginx-5578584966-vgsdc   1/1     Running   0          21s     192.168.247.28   node-2   <none>           <none>
+my-nginx-5578584966-x5r4k   1/1     Running   0          21s     192.168.247.29   node-2   <none>           <none>
+
+```
+# Comando Taint
+
+* Executar comando para os exepmlos acima:
+
+```
+vagrant@k8s-master:~$ kubectl describe nodes node-1 | grep -i taint
+Taints:             <none>
+
+vagrant@k8s-master:~$ kubectl describe nodes  | grep -i taints
+Taints:             node-role.kubernetes.io/master:NoSchedule
+Taints:             <none>
+Taints:             <none>
+
+vagrant@k8s-master:~$ kubectl taint node k8s-master node-role.kubernetes.io/master:NoSchedule-
+node/k8s-master untainted
+
+vagrant@k8s-master:~$ kubectl describe nodes  | grep -i taints
+Taints:             <none>
+Taints:             <none>
+Taints:             <none>
+
+```
+
+```
+# kubectl taint node k8s-master node-role.kubernetes.io/master:NoSchedule
+# kubectl taint node node-1 key1=value1:NoSchedule
+# kubectl taint node node-1 key1=value1:NoSchedule-
+
+# kubectl taint node node-2 key1=value1:NoSchedule
+# kubectl taint node node-2 key1=value1:NoSchedule-
+
+# kubectl taint node all key1=value1:NoExecute
+# kubectl get pods -o wide
+
+```
+
+
+
+
+
+
 
