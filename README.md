@@ -2607,3 +2607,191 @@ first-deployment   1/1     1            1           6m49s
 next-deployment    1/1     1            1           82s
 
 ```
+
+```
+vagrant@k8s-master:~$ kubectl describe deployments first-deployment
+Name:                   first-deployment
+Namespace:              default
+CreationTimestamp:      Wed, 19 Feb 2020 19:04:33 +0000
+Labels:                 app=orbite
+                        run=nginx
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               run=nginx
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  dc=Spanish
+           run=nginx
+  Containers:
+   nginx2:
+    Image:        nginx
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Progressing    True    NewReplicaSetAvailable
+  Available      True    MinimumReplicasAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   first-deployment-55785965cc (1/1 replicas created)
+Events:          <none>
+
+vagrant@k8s-master:~$ kubectl get replicasets.
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       24h
+next-deployment-7466846f79    1         1         1       24h
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                                READY   STATUS    RESTARTS   AGE
+first-deployment-55785965cc-76tsp   1/1     Running   1          24h
+next-deployment-7466846f79-zmchn    1/1     Running   1          24h
+
+vagrant@k8s-master:~$ kubectl describe pod first-deployment-55785965cc-76tsp
+Name:         first-deployment-55785965cc-76tsp
+Namespace:    default
+Priority:     0
+Node:         node-1/172.16.1.11
+Start Time:   Wed, 19 Feb 2020 19:04:33 +0000
+Labels:       dc=Spanish
+              pod-template-hash=55785965cc
+              run=nginx
+Annotations:  cni.projectcalico.org/podIP: 192.168.84.145/32
+Status:       Running
+IP:           192.168.84.145
+IPs:
+  IP:           192.168.84.145
+Controlled By:  ReplicaSet/first-deployment-55785965cc
+Containers:
+  nginx2:
+    Container ID:   docker://3498718ab5791fe1b6f774a8ff05890e341433e8de15b65559abbb293a82450f
+    Image:          nginx
+    Image ID:       docker-pullable://nginx@sha256:ad5552c786f128e389a0263104ae39f3d3c7895579d45ae716f528185b36bc6f
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Thu, 20 Feb 2020 12:41:22 +0000
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    255
+      Started:      Wed, 19 Feb 2020 19:04:37 +0000
+      Finished:     Thu, 20 Feb 2020 12:40:30 +0000
+    Ready:          True
+    Restart Count:  1
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-t4hfb (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  default-token-t4hfb:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-t4hfb
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:          <none>
+
+vagrant@k8s-master:~$ kubectl get pods -l dc=Spanish
+NAME                                READY   STATUS    RESTARTS   AGE
+first-deployment-55785965cc-76tsp   1/1     Running   1          24h
+
+vagrant@k8s-master:~$ kubectl get pods -l dc=Brazil
+NAME                               READY   STATUS    RESTARTS   AGE
+next-deployment-7466846f79-zmchn   1/1     Running   1          24h
+
+vagrant@k8s-master:~$ kubectl get pods -L dc
+NAME                                READY   STATUS    RESTARTS   AGE   DC
+first-deployment-55785965cc-76tsp   1/1     Running   1          24h   Spanish
+next-deployment-7466846f79-zmchn    1/1     Running   1          24h   Brazil
+
+vagrant@k8s-master:~$ kubectl get replicasets. -l dc=Brazil
+NAME                         DESIRED   CURRENT   READY   AGE
+next-deployment-7466846f79   1         1         1       24h
+
+vagrant@k8s-master:~$ kubectl get replicasets. -l dc=Spanish
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       24h
+
+vagrant@k8s-master:~$ kubectl get replicasets. -L dc
+NAME                          DESIRED   CURRENT   READY   AGE   DC
+first-deployment-55785965cc   1         1         1       24h   Spanish
+next-deployment-7466846f79    1         1         1       24h   Brazil
+
+```
+# Label
+
+```
+vagrant@k8s-master:~$ kubectl describe nodes node-1
+Name:               node-1
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    disk=SSD-teste
+
+vagrant@k8s-master:~$ kubectl describe nodes node-2
+Name:               node-2
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    disk=HDD-teste
+
+vagrant@k8s-master:~$ kubectl label nodes node-1 --list
+kubernetes.io/hostname=node-1
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+disk=SSD-teste
+kubernetes.io/arch=amd64
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 --list
+kubernetes.io/hostname=node-2
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+disk=HDD-teste
+kubernetes.io/arch=amd64
+
+vagrant@k8s-master:~$ kubectl label nodes k8s-master --list
+beta.kubernetes.io/os=linux
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=k8s-master
+kubernetes.io/os=linux
+node-role.kubernetes.io/master=
+beta.kubernetes.io/arch=amd64
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 disk=HDD --overwrite
+node/node-2 labeled
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 --list
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=node-2
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+disk=HDD
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 disk=HDD-teste2 --overwrite
+node/node-2 labeled
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 --list
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+disk=HDD-teste2
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=node-2
+
+
+
+```
