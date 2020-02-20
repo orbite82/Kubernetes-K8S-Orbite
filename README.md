@@ -2006,8 +2006,10 @@ default           Active   12d
 kube-node-lease   Active   12d
 kube-public       Active   12d
 kube-system       Active   12d
+
 vagrant@k8s-master:~$ kubectl create namespace orbitex
 namespace/orbitex created
+
 vagrant@k8s-master:~$ kubectl get namespaces
 NAME              STATUS   AGE
 default           Active   12d
@@ -2015,6 +2017,7 @@ kube-node-lease   Active   12d
 kube-public       Active   12d
 kube-system       Active   12d
 orbitex           Active   13s
+
 vagrant@k8s-master:~$ kubectl describe namespace orbitex
 Name:         orbitex
 Labels:       <none>
@@ -2473,6 +2476,9 @@ my-nginx-5578584966-vgsdc   1/1     Running   0          21s     192.168.247.28 
 my-nginx-5578584966-x5r4k   1/1     Running   0          21s     192.168.247.29   node-2   <none>           <none>
 
 ```
+---
+---
+
 # Comando Taint
 
 * Executar comando para os exeplos acima:
@@ -2508,6 +2514,8 @@ Taints:             <none>
 # kubectl get pods -o wide
 
 ```
+---
+---
 
 # Deployment
 
@@ -2729,6 +2737,8 @@ first-deployment-55785965cc   1         1         1       24h   Spanish
 next-deployment-7466846f79    1         1         1       24h   Brazil
 
 ```
+---
+---
 # Label
 
 ```
@@ -2792,6 +2802,276 @@ disk=HDD-teste2
 kubernetes.io/arch=amd64
 kubernetes.io/hostname=node-2
 
+vagrant@k8s-master:~$ kubectl label nodes node-2 dc=Brazil
+node/node-2 labeled
+vagrant@k8s-master:~$ kubectl label nodes node-1 dc=Spanish
+node/node-1 labeled
 
+```
+```
+vagrant@k8s-master:~$ cp first-deployment.yaml three-deployment.yaml
+
+vagrant@k8s-master:~$ vim three-deployment.yaml 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+    app: orbite
+  name: three-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+        dc: Mexico
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx2
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        disk: HDD-teste2
+
+```
+
+`Obs` Neste caso vamos criar o terceiro deploymente apenas aonde tiver disk HDD-teste2, se não exitir o disk ele não vai subir o pode e vai ficar em pending.
+
+Conforme yaml:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+    app: orbite
+  name: three-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+        dc: Mexico
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx2
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      nodeSelector:
+        disk: HDD-teste2
+        
+```
+
+```
+
+vagrant@k8s-master:~$ kubectl create -f  three-deployment.yaml 
+deployment.apps/three-deployment created
+
+vagrant@k8s-master:~$ kubectl create -f three-deployment.yaml 
+deployment.apps/three-deployment created
+
+vagrant@k8s-master:~$ kubectl get deployments.
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+first-deployment   1/1     1            1           25h
+next-deployment    1/1     1            1           25h
+three-deployment   1/1     1            1           10s
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                                READY   STATUS    RESTARTS   AGE
+first-deployment-55785965cc-76tsp   1/1     Running   1          25h
+next-deployment-7466846f79-zmchn    1/1     Running   1          25h
+three-deployment-565b9d6bd-8vkrt    1/1     Running   0          17s
+
+vagrant@k8s-master:~$ kubectl label nodes node-1 --list
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=node-1
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+dc=Spanish
+disk=SSD-teste
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 --list
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+dc=Brazil
+disk=HDD-teste2
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=node-2
+
+```
+* Confirmando se criou no node-2 o pod
+
+```
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                                READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+first-deployment-55785965cc-76tsp   1/1     Running   1          25h     192.168.84.145   node-1   <none>           <none>
+next-deployment-7466846f79-zmchn    1/1     Running   1          25h     192.168.247.35   node-2   <none>           <none>
+three-deployment-565b9d6bd-8vkrt    1/1     Running   0          6m19s   192.168.247.36   node-2   <none>           <none>
+
+```
+
+* Editando e mudando de disk para node-1 para SSD-teste
+
+```
+vagrant@k8s-master:~$ kubectl edit deployments. three-deployment
+deployment.apps/three-deployment edited
+
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2020-02-20T20:22:29Z"
+  generation: 1
+  labels:
+    app: orbite
+    run: nginx
+  name: three-deployment
+  namespace: default
+  resourceVersion: "1215304"
+  selfLink: /apis/apps/v1/namespaces/default/deployments/three-deployment
+  uid: 75394991-6531-427a-a1d0-123e961672d9
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      run: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        dc: Mexico
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx2
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        disk: SSD-teste
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2020-02-20T20:22:34Z"
+    lastUpdateTime: "2020-02-20T20:22:34Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2020-02-20T20:22:29Z"
+    lastUpdateTime: "2020-02-20T20:22:34Z"
+    message: ReplicaSet "three-deployment-565b9d6bd" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                                READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+first-deployment-55785965cc-76tsp   1/1     Running   1          25h   192.168.84.145   node-1   <none>           <none>
+next-deployment-7466846f79-zmchn    1/1     Running   1          25h   192.168.247.35   node-2   <none>           <none>
+three-deployment-67b5675c9d-pjlh9   1/1     Running   0          26s   192.168.84.141   node-1   <none>           <none>
+
+```
+
+```
+vagrant@k8s-master:~$ kubectl describe deployments. three-deployment
+Name:                   three-deployment
+Namespace:              default
+CreationTimestamp:      Thu, 20 Feb 2020 20:22:29 +0000
+Labels:                 app=orbite
+                        run=nginx
+Annotations:            deployment.kubernetes.io/revision: 2
+Selector:               run=nginx
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  dc=Mexico
+           run=nginx
+  Containers:
+   nginx2:
+    Image:        nginx
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   three-deployment-67b5675c9d (1/1 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  13m   deployment-controller  Scaled up replica set three-deployment-565b9d6bd to 1
+  Normal  ScalingReplicaSet  117s  deployment-controller  Scaled up replica set three-deployment-67b5675c9d to 1
+  Normal  ScalingReplicaSet  113s  deployment-controller  Scaled down replica set three-deployment-565b9d6bd to 0
 
 ```
