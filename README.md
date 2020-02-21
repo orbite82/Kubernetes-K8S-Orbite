@@ -3074,4 +3074,159 @@ Events:
   Normal  ScalingReplicaSet  117s  deployment-controller  Scaled up replica set three-deployment-67b5675c9d to 1
   Normal  ScalingReplicaSet  113s  deployment-controller  Scaled down replica set three-deployment-565b9d6bd to 0
 
+vagrant@k8s-master:~$ kubectl get replicaset
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       25h
+next-deployment-7466846f79    1         1         1       25h
+three-deployment-565b9d6bd    0         0         0       15m
+three-deployment-67b5675c9d   1         1         1       3m43s
+
+
 ```
+# Removendo dc e disk do Label
+
+```
+vagrant@k8s-master:~$ kubectl label nodes dc- --all
+label "dc" not found.
+node/k8s-master not labeled
+node/node-1 labeled
+node/node-2 labeled
+
+vagrant@k8s-master:~$ kubectl label node-1 --list
+error: the server doesn't have a resource type "node-1"
+
+vagrant@k8s-master:~$ kubectl label nodes node-1 --list
+beta.kubernetes.io/os=linux
+disk=SSD-teste
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=node-1
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+
+vagrant@k8s-master:~$ kubectl label nodes disk- --all
+label "disk" not found.
+node/k8s-master not labeled
+node/node-1 labeled
+node/node-2 labeled
+
+vagrant@k8s-master:~$ kubectl label nodes node-2 --list
+beta.kubernetes.io/os=linux
+kubernetes.io/arch=amd64
+kubernetes.io/hostname=node-2
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+
+vagrant@k8s-master:~$ kubectl label nodes node-1 --list
+kubernetes.io/hostname=node-1
+kubernetes.io/os=linux
+beta.kubernetes.io/arch=amd64
+beta.kubernetes.io/os=linux
+kubernetes.io/arch=amd64
+
+```
+
+# Replicaset
+
+```
+vagrant@k8s-master:~$ vim first-replicaset.yaml
+
+apiVersion: extensions/v1beta1
+kind: ReplicaSet
+metadata:
+  name:  first-replicaset
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        system: orbitex
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+
+```
+* Caso pegar problemas com a versão da api seguir conforme comando da documentão e converter o yaml, copiar e inserir dentro do yaml:
+
+```
+vagrant@k8s-master:~$ kubectl convert -f ./first-replicaset.yaml --output-version apps/v1
+kubectl convert is DEPRECATED and will be removed in a future version.
+In order to convert, kubectl apply the object to the cluster, then kubectl get at the desired version.
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  creationTimestamp: null
+  labels:
+    system: orbitex
+  name: first-replicaset
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      system: orbitex
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        system: orbitex
+    spec:
+      containers:
+      - image: nginx:1.7.9
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  replicas: 0
+
+vagrant@k8s-master:~$ kubectl create -f first-replicaset.yaml
+replicaset.apps/first-replicaset created
+
+vagrant@k8s-master:~$ kubectl get replicaset
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       43h
+first-replicaset              3         3         3       19s
+next-deployment-7466846f79    1         1         1       43h
+replica-set-primeiro          3         3         3       43m
+three-deployment-565b9d6bd    0         0         0       18h
+three-deployment-67b5675c9d   1         1         1       18h
+
+vagrant@k8s-master:~$ kubectl describe replicaset first-replicaset
+Name:         first-replicaset
+Namespace:    default
+Selector:     system=orbitex
+Labels:       system=orbitex
+Annotations:  <none>
+Replicas:     3 current / 3 desired
+Pods Status:  3 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  system=orbitex
+  Containers:
+   nginx:
+    Image:        nginx:1.7.9
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Events:
+  Type    Reason            Age   From                   Message
+  ----    ------            ----  ----                   -------
+  Normal  SuccessfulCreate  3m2s  replicaset-controller  Created pod: first-replicaset-xldn2
+  Normal  SuccessfulCreate  3m2s  replicaset-controller  Created pod: first-replicaset-79f84
+  Normal  SuccessfulCreate  3m2s  replicaset-controller  Created pod: first-replicaset-h5qgk
+
+```
+
+
