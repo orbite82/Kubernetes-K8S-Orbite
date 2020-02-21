@@ -3227,6 +3227,302 @@ Events:
   Normal  SuccessfulCreate  3m2s  replicaset-controller  Created pod: first-replicaset-79f84
   Normal  SuccessfulCreate  3m2s  replicaset-controller  Created pod: first-replicaset-h5qgk
 
+vagrant@k8s-master:~$ kubectl get rs
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       44h
+first-replicaset              3         3         3       9m46s
+next-deployment-7466846f79    1         1         1       43h
+replica-set-primeiro          3         3         3       53m
+three-deployment-565b9d6bd    0         0         0       18h
+three-deployment-67b5675c9d   1         1         1       18h
+
+vagrant@k8s-master:~$ kubectl edit replicaset first-replicaset 
+replicaset.apps/first-replicaset edited
+
+vagrant@k8s-master:~$ kubectl get rs
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       44h
+first-replicaset              4         4         4       12m
+next-deployment-7466846f79    1         1         1       44h
+replica-set-primeiro          3         3         3       55m
+three-deployment-565b9d6bd    0         0         0       18h
+three-deployment-67b5675c9d   1         1         1       18h
+
+vagrant@k8s-master:~$ kubectl get pods -L system
+NAME                                READY   STATUS    RESTARTS   AGE     SYSTEM
+first-deployment-55785965cc-76tsp   1/1     Running   1          44h     
+first-replicaset-79f84              1/1     Running   0          14m     orbitex
+first-replicaset-h5qgk              1/1     Running   0          14m     orbitex
+first-replicaset-llm6v              1/1     Running   0          2m34s   orbitex
+first-replicaset-xldn2              1/1     Running   0          14m     orbitex
+next-deployment-7466846f79-zmchn    1/1     Running   1          44h     
+replica-set-primeiro-8hhr5          1/1     Running   0          57m     Giropops
+replica-set-primeiro-ggh79          1/1     Running   0          57m     Giropops
+replica-set-primeiro-kbff6          1/1     Running   0          57m     Giropops
+three-deployment-67b5675c9d-pjlh9   1/1     Running   0          18h     
+
+```
+# Removendo os Labs
+
+```
+vagrant@k8s-master:~$ kubectl get replicaset
+NAME                          DESIRED   CURRENT   READY   AGE
+first-deployment-55785965cc   1         1         1       44h
+first-replicaset              4         4         4       28m
+next-deployment-7466846f79    1         1         1       44h
+replica-set-primeiro          3         3         3       71m
+three-deployment-565b9d6bd    0         0         0       19h
+three-deployment-67b5675c9d   1         1         1       18h
+
+vagrant@k8s-master:~$ kubectl delete -f first-replicaset.yaml
+replicaset.apps "first-replicaset" deleted
+
+vagrant@k8s-master:~$ kubectl delete -f primeiro-replicaset.yaml
+replicaset.apps "replica-set-primeiro" deleted
+
+vagrant@k8s-master:~$ kubectl get deployment
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+first-deployment   1/1     1            1           44h
+next-deployment    1/1     1            1           44h
+three-deployment   1/1     1            1           19h
+
+vagrant@k8s-master:~$ kubectl delete deployments -f first-deployment.yaml 
+error: when paths, URLs, or stdin is provided as input, you may not specify resource arguments as well
+
+vagrant@k8s-master:~$ kubectl delete  -f first-deployment.yaml 
+deployment.apps "first-deployment" deleted
+
+vagrant@k8s-master:~$ kubectl delete -f next-deployment.yaml 
+deployment.apps "next-deployment" deleted
+
+vagrant@k8s-master:~$ kubectl delete -f three-deployment.yaml 
+deployment.apps "three-deployment" deleted
+
+```
+# Daemonset
+
+```
+vagrant@k8s-master:~$ vim 1-daemonset.yaml 
+
+vagrant@k8s-master:~$ cat 1-daemonset.yaml 
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: daemon-set-primeiro
+spec:
+  template:
+    metadata:
+      labels:
+        system: Strigus
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+
+vagrant@k8s-master:~$ kubectl convert -f ./1-daemonset.yaml --output-version apps/v1
+kubectl convert is DEPRECATED and will be removed in a future version.
+In order to convert, kubectl apply the object to the cluster, then kubectl get at the desired version.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    deprecated.daemonset.template.generation: "0"
+  creationTimestamp: null
+  labels:
+    system: Strigus
+  name: daemon-set-primeiro
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      system: Strigus
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        system: Strigus
+    spec:
+      containers:
+      - image: nginx:1.7.9
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    type: OnDelete
+status:
+  currentNumberScheduled: 0
+  desiredNumberScheduled: 0
+  numberMisscheduled: 0
+  numberReady: 0
+
+vagrant@k8s-master:~$ kubectl create -f 1-daemonset.yaml
+daemonset.apps/daemon-set-primeiro created
+
+vagrant@k8s-master:~$ kubectl get daemonset
+NAME                  DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+daemon-set-primeiro   3         3         3       3            3           <none>          2m41s
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+daemon-set-primeiro-8q6vv   1/1     Running   0          4m20s
+daemon-set-primeiro-j2p66   1/1     Running   0          4m20s
+daemon-set-primeiro-ms2vf   1/1     Running   0          4m20s
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                        READY   STATUS    RESTARTS   AGE     IP                NODE         NOMINATED NODE   READINESS GATES
+daemon-set-primeiro-8q6vv   1/1     Running   0          4m34s   192.168.247.37    node-2       <none>           <none>
+daemon-set-primeiro-j2p66   1/1     Running   0          4m34s   192.168.235.213   k8s-master   <none>           <none>
+daemon-set-primeiro-ms2vf   1/1     Running   0          4m34s   192.168.84.147    node-1       <none>           <none>
+
 ```
 
+`Obs` Caso seu node master estiver com taint pra no-scheduler siga o comando:
 
+```
+vagrant@k8s-master:~$ kubectl describe node k8s-master
+Name:               k8s-master
+Roles:              master
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=k8s-master
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/master=
+Annotations:        kubeadm.alpha.kubernetes.io/cri-socket: /var/run/dockershim.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.16.1.10/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.235.192
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Wed, 05 Feb 2020 17:23:12 +0000
+Taints:             node-role.kubernetes.io/master:NoSchedule
+
+
+vagrant@k8s-master:~$ kubectl taint node k8s-master node-role.kubernetes.io/master-
+node/k8s-master untainted
+
+```
+* Voltando do taint da master como melhores práticas do mercado:
+
+```
+vagrant@k8s-master:~$ kubectl taint node k8s-master node-role.kubernetes.io/master=value1:NoSchedule 
+node/k8s-master tainted
+
+```
+* Alterando via linha de comando sem usar o edit a versão do nginx do daemonset:
+
+```
+vagrant@k8s-master:~$ kubectl get daemonset
+NAME                  DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+daemon-set-primeiro   2         2         2       2            2           <none>          16m
+vagrant@k8s-master:~$ kubectl set image daemonset daemon-set-primeiro nginx=nginx:1:15.0
+daemonset.apps/daemon-set-primeiro image updated
+
+vagrant@k8s-master:~$ kubectl get ds
+NAME                  DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+daemon-set-primeiro   2         2         2       0            2           <none>          21m
+
+vagrant@k8s-master:~$ kubectl describe daemonset daemon-set-primeiro
+Name:           daemon-set-primeiro
+Selector:       system=Strigus
+Node-Selector:  <none>
+Labels:         system=Strigus
+Annotations:    deprecated.daemonset.template.generation: 2
+Desired Number of Nodes Scheduled: 2
+Current Number of Nodes Scheduled: 2
+Number of Nodes Scheduled with Up-to-date Pods: 0
+Number of Nodes Scheduled with Available Pods: 2
+Number of Nodes Misscheduled: 1
+Pods Status:  3 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  system=Strigus
+  Containers:
+   nginx:
+    Image:        nginx:1:15.0
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:       <none>
+  Volumes:        <none>
+Events:
+  Type    Reason            Age   From                  Message
+  ----    ------            ----  ----                  -------
+  Normal  SuccessfulCreate  21m   daemonset-controller  Created pod: daemon-set-primeiro-j2p66
+  Normal  SuccessfulCreate  21m   daemonset-controller  Created pod: daemon-set-primeiro-8q6vv
+  Normal  SuccessfulCreate  21m   daemonset-controller  Created pod: daemon-set-primeiro-ms2vf
+
+vagrant@k8s-master:~$ kubectl get pod
+NAME                        READY   STATUS    RESTARTS   AGE
+daemon-set-primeiro-8q6vv   1/1     Running   0          23m
+daemon-set-primeiro-j2p66   1/1     Running   0          23m
+daemon-set-primeiro-ms2vf   1/1     Running   0          23m
+
+vagrant@k8s-master:~$ kubectl describe pod daemon-set-primeiro-8q6vv
+Name:         daemon-set-primeiro-8q6vv
+Namespace:    default
+Priority:     0
+Node:         node-2/172.16.1.12
+Start Time:   Fri, 21 Feb 2020 20:52:55 +0000
+Labels:       controller-revision-hash=69bf64c84d
+              pod-template-generation=1
+              system=Strigus
+Annotations:  cni.projectcalico.org/podIP: 192.168.247.37/32
+Status:       Running
+IP:           192.168.247.37
+IPs:
+  IP:           192.168.247.37
+Controlled By:  DaemonSet/daemon-set-primeiro
+Containers:
+  nginx:
+    Container ID:   docker://3ad575131d7efe2d762700f030a7063ad8b476bdbf19836a346e9cf4f5875359
+    Image:          nginx:1.7.9
+    Image ID:       docker-pullable://nginx@sha256:e3456c851a152494c3e4ff5fcc26f240206abac0c9d794affb40e0714846c451
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Fri, 21 Feb 2020 20:52:56 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-t4hfb (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  default-token-t4hfb:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-t4hfb
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/disk-pressure:NoSchedule
+                 node.kubernetes.io/memory-pressure:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute
+                 node.kubernetes.io/pid-pressure:NoSchedule
+                 node.kubernetes.io/unreachable:NoExecute
+                 node.kubernetes.io/unschedulable:NoSchedule
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  23m   default-scheduler  Successfully assigned default/daemon-set-primeiro-8q6vv to node-2
+  Normal  Pulled     23m   kubelet, node-2    Container image "nginx:1.7.9" already present on machine
+  Normal  Created    23m   kubelet, node-2    Created container nginx
+  Normal  Started    23m   kubelet, node-2    Started container nginx
+
+
+```
