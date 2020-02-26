@@ -4110,5 +4110,112 @@ status:
 vagrant@k8s-master:~$ kubectl rollout status deployment giropops-v2
 deployment "giropops-v2" successfully rolled out
 
+```
+---
+---
+# Volume EmptyDir
+
+```
+vagrant@k8s-master:~$ vim pod-emptydir.yaml
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  namespace: default
+spec:
+  containers:
+  - image: busybox
+    name: busy
+    command:
+      - sleep
+      - "3600"
+    volumeMounts:
+    - mountPath: /giropops
+      name: giropops-dir
+  volumes:
+  - name: giropops-dir
+    emptyDir: {}
+
+vagrant@k8s-master:~$ kubectl create -f pod-emptydir.yaml
+pod/busybox created
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME      READY   STATUS    RESTARTS   AGE    IP               NODE     NOMINATED NODE   READINESS GATES
+busybox   1/1     Running   0          2m2s   192.168.84.173   node-1   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl describe pod busybox
+Name:         busybox
+Namespace:    default
+Priority:     0
+Node:         node-1/172.16.1.11
+Start Time:   Wed, 26 Feb 2020 19:19:35 +0000
+Labels:       <none>
+Annotations:  cni.projectcalico.org/podIP: 192.168.84.173/32
+Status:       Running
+IP:           192.168.84.173
+IPs:
+  IP:  192.168.84.173
+Containers:
+  busy:
+    Container ID:  docker://e3753716d3970a468c0efbc7b42af08eff1a911868b11a4083e285bdbad42caf
+    Image:         busybox
+    Image ID:      docker-pullable://busybox@sha256:6915be4043561d64e0ab0f8f098dc2ac48e077fe23f488ac24b665166898115a
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sleep
+      3600
+    State:          Running
+      Started:      Wed, 26 Feb 2020 19:19:49 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /giropops from giropops-dir (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-t4hfb (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  giropops-dir:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  default-token-t4hfb:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-t4hfb
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age        From               Message
+  ----    ------     ----       ----               -------
+  Normal  Scheduled  <unknown>  default-scheduler  Successfully assigned default/busybox to node-1
+  Normal  Pulling    2m44s      kubelet, node-1    Pulling image "busybox"
+  Normal  Pulled     2m38s      kubelet, node-1    Successfully pulled image "busybox"
+  Normal  Created    2m38s      kubelet, node-1    Created container busy
+  Normal  Started    2m36s      kubelet, node-1    Started container busy
+
+vagrant@k8s-master:~$  kubectl exec -ti busybox -- sh 
+/ # ls
+bin       dev       etc       giropops  home      proc      root      sys       tmp       usr       var
+/ # pwd
+/
+/ # cd giropops/
+/giropops # ls
+/giropops # toutch teste1
+sh: toutch: not found
+/giropops # touch teste1
+/giropops # ls
+teste1
+/giropops # exit
+
 
 ```
