@@ -4217,5 +4217,128 @@ sh: toutch: not found
 teste1
 /giropops # exit
 
+```
+---
+---
+
+# Persistent Volume
 
 ```
+vagrant@node-1:~$ sudo su -
+root@node-1:~# cd /va
+
+vagrant/ var/     
+root@node-1:~# cd /va
+
+vagrant/ var/     
+
+root@node-1:~# cd /var/lib/kubelet/pods
+
+root@node-1:/var/lib/kubelet/pods# ls
+82ba2175-6554-46d0-b1db-94a21ffe8272  a13df6ec-5f9a-4537-b683-7bc3822283c1  db74a868-042b-4c8e-890b-fca9a03f8cd4
+
+root@node-1:/var/lib/kubelet/pods# find . -iname "giropops-dir"
+./82ba2175-6554-46d0-b1db-94a21ffe8272/plugins/kubernetes.io~empty-dir/giropops-dir
+./82ba2175-6554-46d0-b1db-94a21ffe8272/volumes/kubernetes.io~empty-dir/giropops-dir
+
+root@node-1:/var/lib/kubelet/pods# cd ./82ba2175-6554-46d0-b1db-94a21ffe8272/volumes/kubernetes.io~empty-dir/giropops-dir
+
+root@node-1:/var/lib/kubelet/pods/82ba2175-6554-46d0-b1db-94a21ffe8272/volumes/kubernetes.io~empty-dir/giropops-dir# ls
+teste1
+
+root@node-1:/var/lib/kubelet/pods/82ba2175-6554-46d0-b1db-94a21ffe8272/volumes/kubernetes.io~empty-dir/giropops-dir# cd 
+
+root@node-1:~# ls -lha /var/lib/kubelet/pods/82ba2175-6554-46d0-b1db-94a21ffe8272/volumes/kubernetes.io~empty-dir/giropops-dir
+total 8.0K
+drwxrwxrwx 2 root root 4.0K Feb 26 19:24 .
+drwxr-xr-x 3 root root 4.0K Feb 26 19:19 ..
+-rw-r--r-- 1 root root    0 Feb 26 19:24 teste1
+
+vagrant@k8s-master:~$ kubectl delete -f pod-emptydir.yaml
+pod "busybox" deleted
+
+vagrant@k8s-master:~$ mkdir /opt/dados
+mkdir: cannot create directory '/opt/dados': Permission denied
+
+vagrant@k8s-master:~$ sudo mkdir /opt/dados
+
+vagrant@k8s-master:~$ chmod 1777 /opt/dados/
+chmod: changing permissions of '/opt/dados/': Operation not permitted
+
+vagrant@k8s-master:~$ sudo chmod 1777 /opt/dados/
+
+vagrant@k8s-master:~$ vim /etc/exports 
+
+vagrant@k8s-master:~$ vim /etc/exports 
+
+vagrant@k8s-master:~$ sudo su -
+
+root@k8s-master:~# vim /etc/exports 
+
+# /etc/exports: the access control list for filesystems which may be exported
+#               to NFS clients.  See exports(5).
+#
+# Example for NFSv2 and NFSv3:
+# /srv/homes       hostname1(rw,sync,no_subtree_check) hostname2(ro,sync,no_subtree_check)
+#
+# Example for NFSv4:
+# /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
+# /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
+#
+/opt/dados *(rw,sync,no_root_squash,subtree_check)
+
+root@k8s-master:~# exportfs -ar
+
+```
+`Obs:` * Colocar o ip do node master
+
+```
+vagrant@node-1:~$ showmount -e 172.16.1.10
+Export list for 172.16.1.10:
+/opt/dados *
+
+vagrant@k8s-master:~$ kubectl convert -f ./primeiro-pv.yaml --output-version v1
+kubectl convert is DEPRECATED and will be removed in a future version.
+In order to convert, kubectl apply the object to the cluster, then kubectl get at the desired version.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  creationTimestamp: null
+  name: primeiro-pv
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  nfs:
+    path: /opt/dados
+    server: 172.16.1.10
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+status:
+  phase: Pending
+
+vagrant@k8s-master:~$ vim first-pv.yaml
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  creationTimestamp: null
+  name: primeiro-pv
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  nfs:
+    path: /opt/dados
+    server: 172.16.1.10
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+status:
+  phase: Pending
+
+
+
+```
+
