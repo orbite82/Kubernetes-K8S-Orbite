@@ -3524,5 +3524,293 @@ Events:
   Normal  Created    23m   kubelet, node-2    Created container nginx
   Normal  Started    23m   kubelet, node-2    Started container nginx
 
+```
+---
+---
+
+# Rollout
+
+```
+vagrant@k8s-master:~$ kubectl get daemonsets
+NAME          DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+1-daemonset   2         2         2       2            2           <none>          4d15h
+
+vagrant@k8s-master:~$ kubectl rollout history daemonset 1-daemonset
+daemonset.apps/1-daemonset 
+REVISION  CHANGE-CAUSE
+1         <none>
+
+vagrant@k8s-master:~$ kubectl rollout history daemonset 1-daemonset --revision=1
+daemonset.apps/1-daemonset with revision #1
+Pod Template:
+  Labels:	system=Strigus
+  Containers:
+   nginx:
+    Image:	nginx:1.7.9
+    Port:	80/TCP
+    Host Port:	0/TCP
+    Environment:	<none>
+    Mounts:	<none>
+  Volumes:	<none>
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                READY   STATUS    RESTARTS   AGE
+1-daemonset-2lc6s   1/1     Running   1          4d15h
+1-daemonset-p6xn2   1/1     Running   1          4d15h
+
+vagrant@k8s-master:~$ kubectl describe pods 1-daemonset-2lc6s | grep -i nginx
+  nginx:
+    Image:          nginx:1.7.9
+    Image ID:       docker-pullable://nginx@sha256:e3456c851a152494c3e4ff5fcc26f240206abac0c9d794affb40e0714846c451
+  Normal  Pulled          4d15h              kubelet, node-2    Container image "nginx:1.7.9" already present on machine
+  Normal  Created         4d15h              kubelet, node-2    Created container nginx
+  Normal  Started         4d15h              kubelet, node-2    Started container nginx
+  Normal  Pulled          11m                kubelet, node-2    Container image "nginx:1.7.9" already present on machine
+  Normal  Created         11m                kubelet, node-2    Created container nginx
+  Normal  Started         11m                kubelet, node-2    Started container nginx
+
+vagrant@k8s-master:~$ kubectl rollout undo daemonset 1-daemonset --to-revision=1
+daemonset.apps/1-daemonset skipped rollback (current template already matches revision 1)
+
+vagrant@k8s-master:~$ kubectl describe pods 1-daemonset-2lc6s | grep Image
+    Image:          nginx:1.7.9
+    Image ID:       docker-pullable://nginx@sha256:e3456c851a152494c3e4ff5fcc26f240206abac0c9d794affb40e0714846c451
+
+
+```
+---
+---
+
+# Canary Deploy
+
+```
+vagrant@k8s-master:~$ git clone https://github.com/badtuxx/k8s-canary-deploy-example.git
+Cloning into 'k8s-canary-deploy-example'...
+remote: Enumerating objects: 159, done.
+remote: Total 159 (delta 0), reused 0 (delta 0), pack-reused 159
+Receiving objects: 100% (159/159), 1011.35 KiB | 1.37 MiB/s, done.
+Resolving deltas: 100% (45/45), done.
+Checking connectivity... done.
+
+vagrant@k8s-master:~$ kubectl create -f app-v2.yml
+error: unable to recognize "app-v1.yml": no matches for kind "Deployment" in version "extensions/v1beta1"
+
+vagrant@k8s-master:~$ kubectl convert -f ./app-v2.yml --output-version apps/v1
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: giropops
+    version: 1.0.0
+  name: giropops-v1
+spec:
+  progressDeadlineSeconds: 2147483647
+  replicas: 10
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: giropops
+      version: 1.0.0
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "32111"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: giropops
+        version: 1.0.0
+    spec:
+      containers:
+      - env:
+        - name: VERSION
+          value: 1.0.0
+        image: linuxtips/nginx-prometheus-exporter:1.0.0
+        imagePullPolicy: IfNotPresent
+        name: giropops
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 32111
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+vagrant@k8s-master:~$ kubectl create -f app-v2.yml
+deployment.apps/giropops-v1 created
+
+vagrant@k8s-master:~$ kubectl get deployment
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+giropops-v1   10/10   10           10          2m13s
+
+vagrant@k8s-master:~$ ls
+1-daemonset.yaml         deployment_no_limited.yaml  k8s-canary-deploy-example  my_first_service_loadbalancer.yaml  pod-limeted.yaml          segundo-deployment.yaml
+app-v1.yml               first-deployment.yaml       my_first_deployment.yaml   my_first_service_nodeport.yaml      primeiro-deployment.yaml  service-app.yml
+app-v2.yml               first-replicaset.yaml       my_first_namespace.yaml    my_limited_namespace.yaml           primeiro-replicaset.yaml  terceiro-deployment.yaml
+deployment_limited.yaml  first_deployment.yaml       my_first_service.yaml      next-deployment.yaml                quarto-deployment.yaml    three-deployment.yaml
+
+vagrant@k8s-master:~$ vim service-app.yml 
+
+vagrant@k8s-master:~$ kubectl create -f service-app.yml
+service/giropops created
+
+vagrant@k8s-master:~$  kubectl get services
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                        AGE
+giropops     NodePort    10.102.140.106   <none>        80:32222/TCP,32111:32111/TCP   46s
+kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP                        20d
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                           READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+giropops-v1-8597f74669-4hs5h   1/1     Running   0          8m42s   192.168.247.48   node-2   <none>           <none>
+giropops-v1-8597f74669-5842q   1/1     Running   0          8m42s   192.168.84.156   node-1   <none>           <none>
+giropops-v1-8597f74669-5tk8p   1/1     Running   0          8m42s   192.168.247.42   node-2   <none>           <none>
+giropops-v1-8597f74669-bfsxc   1/1     Running   0          8m42s   192.168.247.43   node-2   <none>           <none>
+giropops-v1-8597f74669-nj4hm   1/1     Running   0          8m42s   192.168.247.49   node-2   <none>           <none>
+giropops-v1-8597f74669-qcp9z   1/1     Running   0          8m42s   192.168.84.155   node-1   <none>           <none>
+giropops-v1-8597f74669-s5nlq   1/1     Running   0          8m42s   192.168.84.154   node-1   <none>           <none>
+giropops-v1-8597f74669-t6gs7   1/1     Running   0          8m42s   192.168.84.148   node-1   <none>           <none>
+giropops-v1-8597f74669-wdfhv   1/1     Running   0          8m42s   192.168.247.45   node-2   <none>           <none>
+giropops-v1-8597f74669-xvv7w   1/1     Running   0          8m42s   192.168.84.153   node-1   <none>           <none>
+
+vagrant@k8s-master:~$ cp k8s-canary-deploy-example/canary-deploy-app-v2-playbook/roles/common/files/* .
+
+vagrant@k8s-master:~$ cp app-v2-canary.yml app-v3-canary.yml 
+
+vagrant@k8s-master:~$ kubectl convert -f ./app-v3-canary.yml --output-version apps/v1
+
+kubectl convert is DEPRECATED and will be removed in a future version.
+In order to convert, kubectl apply the object to the cluster, then kubectl get at the desired version.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: giropops
+    version: 2.0.0
+  name: giropops-v2
+spec:
+  progressDeadlineSeconds: 2147483647
+  replicas: 1
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: giropops
+      version: 2.0.0
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "32111"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: giropops
+        version: 2.0.0
+    spec:
+      containers:
+      - env:
+        - name: VERSION
+          value: 2.0.0
+        image: linuxtips/nginx-prometheus-exporter:2.0.0
+        imagePullPolicy: IfNotPresent
+        name: giropops
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 32111
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+vagrant@k8s-master:~$ kubectl create -f app-v3-canary.yml
+deployment.apps/giropops-v2 created
+
+vagrant@k8s-master:~$ kubectl get deploy
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+giropops-v1   10/10   10           10          16m
+giropops-v2   1/1     1            1           31s
+
+vagrant@k8s-master:~$ kubectl create -f app-v2.yml
+Error from server (AlreadyExists): error when creating "app-v2.yml": deployments.apps "giropops-v2" already exists
+
+vagrant@k8s-master:~$ kubectl apply -f app-v2.yml
+Warning: kubectl apply should be used on resource created by either kubectl create --save-config or kubectl apply
+deployment.apps/giropops-v2 configured
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                           READY   STATUS              RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+giropops-v1-8597f74669-4hs5h   1/1     Running             0          26m   192.168.247.48   node-2   <none>           <none>
+giropops-v1-8597f74669-5842q   1/1     Running             0          26m   192.168.84.156   node-1   <none>           <none>
+giropops-v1-8597f74669-5tk8p   1/1     Running             0          26m   192.168.247.42   node-2   <none>           <none>
+giropops-v1-8597f74669-bfsxc   1/1     Running             0          26m   192.168.247.43   node-2   <none>           <none>
+giropops-v1-8597f74669-nj4hm   1/1     Running             0          26m   192.168.247.49   node-2   <none>           <none>
+giropops-v1-8597f74669-qcp9z   1/1     Running             0          26m   192.168.84.155   node-1   <none>           <none>
+giropops-v1-8597f74669-s5nlq   1/1     Running             0          26m   192.168.84.154   node-1   <none>           <none>
+giropops-v1-8597f74669-t6gs7   1/1     Running             0          26m   192.168.84.148   node-1   <none>           <none>
+giropops-v1-8597f74669-wdfhv   1/1     Running             0          26m   192.168.247.45   node-2   <none>           <none>
+giropops-v1-8597f74669-xvv7w   1/1     Running             0          26m   192.168.84.153   node-1   <none>           <none>
+giropops-v2-6df4cbd48-4qtxp    1/1     Terminating         0          22s   192.168.84.157   node-1   <none>           <none>
+giropops-v2-6df4cbd48-5x7kc    1/1     Running             0          10m   192.168.247.50   node-2   <none>           <none>
+giropops-v2-6df4cbd48-79g2q    0/1     Terminating         0          22s   192.168.247.54   node-2   <none>           <none>
+giropops-v2-6df4cbd48-csk6l    0/1     Terminating         0          22s   192.168.247.55   node-2   <none>           <none>
+giropops-v2-6df4cbd48-nsj9g    1/1     Running             0          22s   192.168.247.47   node-2   <none>           <none>
+giropops-v2-6df4cbd48-rbknr    1/1     Running             0          22s   192.168.84.160   node-1   <none>           <none>
+giropops-v2-6df4cbd48-wd7jg    1/1     Running             0          22s   192.168.84.152   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-5mcn6   0/1     Running             0          3s    192.168.247.53   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-9cp2r   1/1     Running             0          15s   192.168.84.162   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-cshhq   1/1     Running             0          9s    192.168.247.52   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-hrq54   0/1     ContainerCreating   0          1s    <none>           node-1   <none>           <none>
+giropops-v2-7bb5867fb4-jg428   1/1     Running             0          22s   192.168.247.56   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-qjxd4   1/1     Running             0          22s   192.168.84.158   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-wlwxr   1/1     Running             0          4s    192.168.84.166   node-1   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl scale deployment --replicas=3 giropops-v1
+deployment.apps/giropops-v1 scaled
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                           READY   STATUS    RESTARTS   AGE     IP               NODE     NOMINATED NODE   READINESS GATES
+giropops-v1-8597f74669-5tk8p   1/1     Running   0          29m     192.168.247.42   node-2   <none>           <none>
+giropops-v1-8597f74669-bfsxc   1/1     Running   0          29m     192.168.247.43   node-2   <none>           <none>
+giropops-v1-8597f74669-t6gs7   1/1     Running   0          29m     192.168.84.148   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-5mcn6   1/1     Running   0          2m42s   192.168.247.53   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-9cp2r   1/1     Running   0          2m54s   192.168.84.162   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-blct6   1/1     Running   0          2m28s   192.168.247.57   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-cshhq   1/1     Running   0          2m48s   192.168.247.52   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-hj5lm   1/1     Running   0          2m31s   192.168.84.163   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-hrq54   1/1     Running   0          2m40s   192.168.84.164   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-jg428   1/1     Running   0          3m1s    192.168.247.56   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-qjxd4   1/1     Running   0          3m1s    192.168.84.158   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-vtgcn   1/1     Running   0          2m36s   192.168.247.58   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-wlwxr   1/1     Running   0          2m43s   192.168.84.166   node-1   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl scale deployment --replicas=1 giropops-v1
+deployment.apps/giropops-v1 scaled
+
+vagrant@k8s-master:~$ kubectl delete deployments giropops-v1
+deployment.apps "giropops-v1" deleted
 
 ```
