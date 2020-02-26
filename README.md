@@ -3813,4 +3813,302 @@ deployment.apps/giropops-v1 scaled
 vagrant@k8s-master:~$ kubectl delete deployments giropops-v1
 deployment.apps "giropops-v1" deleted
 
+vagrant@k8s-master:~$ kubectl rollout history deployment giropops-v2
+deployment.apps/giropops-v2 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+vagrant@k8s-master:~$ kubectl rollout history deployment giropops-v2 --revision=1
+deployment.apps/giropops-v2 with revision #1
+Pod Template:
+  Labels:	app=giropops
+	pod-template-hash=6df4cbd48
+	version=2.0.0
+  Annotations:	prometheus.io/port: 32111
+	prometheus.io/scrape: true
+  Containers:
+   giropops:
+    Image:	linuxtips/nginx-prometheus-exporter:2.0.0
+    Ports:	80/TCP, 32111/TCP
+    Host Ports:	0/TCP, 0/TCP
+    Environment:
+      VERSION:	2.0.0
+    Mounts:	<none>
+  Volumes:	<none>
+
+vagrant@k8s-master:~$ kubectl rollout history deployment giropops-v2 --revision=2
+deployment.apps/giropops-v2 with revision #2
+Pod Template:
+  Labels:	app=giropops
+	pod-template-hash=7bb5867fb4
+	version=2.0.0
+  Annotations:	prometheus.io/port: 32111
+	prometheus.io/scrape: true
+  Containers:
+   giropops:
+    Image:	linuxtips/nginx-prometheus-exporter:2.0.0
+    Ports:	80/TCP, 32111/TCP
+    Host Ports:	0/TCP, 0/TCP
+    Liveness:	http-get http://:80/ delay=0s timeout=1s period=10s #success=1 #failure=3
+    Readiness:	http-get http://:80/ delay=0s timeout=1s period=10s #success=1 #failure=3
+    Environment:
+      VERSION:	2.0.0
+    Mounts:	<none>
+  Volumes:	<none>
+
+
+```
+# Rollouts e Rollbacks
+
+```
+vagrant@k8s-master:~$ kubectl describe deployments giropops-v2
+Name:                   giropops-v2
+Namespace:              default
+CreationTimestamp:      Wed, 26 Feb 2020 14:08:04 +0000
+Labels:                 app=giropops
+                        version=2.0.0
+Annotations:            deployment.kubernetes.io/revision: 2
+                        kubectl.kubernetes.io/last-applied-configuration:
+                          {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"creationTimestamp":null,"labels":{"app":"giropops","version":"2....
+Selector:               app=giropops,version=2.0.0
+Replicas:               10 desired | 10 updated | 10 total | 10 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  1 max unavailable, 1 max surge
+Pod Template:
+  Labels:       app=giropops
+                version=2.0.0
+  Annotations:  prometheus.io/port: 32111
+                prometheus.io/scrape: true
+  Containers:
+   giropops:
+    Image:       linuxtips/nginx-prometheus-exporter:2.0.0
+    Ports:       80/TCP, 32111/TCP
+    Host Ports:  0/TCP, 0/TCP
+    Liveness:    http-get http://:80/ delay=0s timeout=1s period=10s #success=1 #failure=3
+    Readiness:   http-get http://:80/ delay=0s timeout=1s period=10s #success=1 #failure=3
+    Environment:
+      VERSION:  2.0.0
+    Mounts:     <none>
+  Volumes:      <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   giropops-v2-7bb5867fb4 (10/10 replicas created)
+Events:
+  Type    Reason             Age                 From                   Message
+  ----    ------             ----                ----                   -------
+  Normal  ScalingReplicaSet  25m                 deployment-controller  Scaled up replica set giropops-v2-6df4cbd48 to 1
+  Normal  ScalingReplicaSet  15m                 deployment-controller  Scaled up replica set giropops-v2-6df4cbd48 to 10
+  Normal  ScalingReplicaSet  15m                 deployment-controller  Scaled up replica set giropops-v2-7bb5867fb4 to 1
+  Normal  ScalingReplicaSet  15m                 deployment-controller  Scaled down replica set giropops-v2-6df4cbd48 to 9
+  Normal  ScalingReplicaSet  15m                 deployment-controller  Scaled up replica set giropops-v2-7bb5867fb4 to 2
+  Normal  ScalingReplicaSet  14m                 deployment-controller  Scaled down replica set giropops-v2-6df4cbd48 to 8
+  Normal  ScalingReplicaSet  14m                 deployment-controller  Scaled up replica set giropops-v2-7bb5867fb4 to 3
+  Normal  ScalingReplicaSet  14m                 deployment-controller  Scaled down replica set giropops-v2-6df4cbd48 to 7
+  Normal  ScalingReplicaSet  14m                 deployment-controller  Scaled up replica set giropops-v2-7bb5867fb4 to 4
+  Normal  ScalingReplicaSet  14m                 deployment-controller  Scaled down replica set giropops-v2-6df4cbd48 to 6
+  Normal  ScalingReplicaSet  14m (x12 over 14m)  deployment-controller  (combined from similar events): Scaled down replica set giropops-v2-6df4cbd48 to 0
+
+vagrant@k8s-master:~$ vim app-v2.yml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: giropops
+    version: 2.0.0
+  name: giropops-v2
+spec:
+  progressDeadlineSeconds: 2147483647
+  replicas: 10
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: giropops
+      version: 2.0.0
+  strategy:
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 3
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "32111"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: giropops
+        version: 2.0.0
+    spec:
+      containers:
+      - env:
+        - name: VERSION
+          value: 2.0.0
+        image: linuxtips/nginx-prometheus-exporter:2.0.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: giropops
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 32111
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+
+vagrant@k8s-master:~$ kubectl apply -f app-v2.yml
+deployment.apps/giropops-v2 configured
+
+vagrant@k8s-master:~$ kubectl delete -f app-v2.yml
+deployment.apps "giropops-v2" deleted
+vagrant@k8s-master:~$ kubectl get pods -o wide
+NAME                           READY   STATUS        RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES
+giropops-v2-7bb5867fb4-5mcn6   1/1     Terminating   0          23m   192.168.247.53   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-9cp2r   1/1     Terminating   0          23m   192.168.84.162   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-blct6   1/1     Terminating   0          23m   192.168.247.57   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-cshhq   1/1     Terminating   0          23m   192.168.247.52   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-hj5lm   1/1     Terminating   0          23m   192.168.84.163   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-hrq54   1/1     Terminating   0          23m   192.168.84.164   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-jg428   1/1     Terminating   0          23m   192.168.247.56   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-qjxd4   1/1     Terminating   0          23m   192.168.84.158   node-1   <none>           <none>
+giropops-v2-7bb5867fb4-vtgcn   1/1     Terminating   0          23m   192.168.247.58   node-2   <none>           <none>
+giropops-v2-7bb5867fb4-wlwxr   1/1     Terminating   0          23m   192.168.84.166   node-1   <none>           <none>
+
+vagrant@k8s-master:~$ kubectl get pods -o wide
+No resources found in default namespace.
+
+vagrant@k8s-master:~$ kubectl create -f app-v2.yml
+deployment.apps/giropops-v2 created
+
+vagrant@k8s-master:~$ kubectl edit deployments giropops-v2
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2020-02-26T14:43:31Z"
+  generation: 1
+  labels:
+    app: giropops
+    version: 1.0.0
+  name: giropops-v2
+  namespace: default
+  resourceVersion: "1435722"
+  selfLink: /apis/apps/v1/namespaces/default/deployments/giropops-v2
+  uid: 002a9f8a-ff10-4bd6-a478-8048ec443eb9
+spec:
+  progressDeadlineSeconds: 2147483647
+  replicas: 10
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: giropops
+      version: 1.0.0
+  strategy:
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 3
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "32111"
+        prometheus.io/scrape: "true"
+      creationTimestamp: null
+      labels:
+        app: giropops
+        version: 1.0.0
+    spec:
+      containers:
+      - env:
+        - name: VERSION
+          value: 1.0.0
+        image: linuxtips/nginx-prometheus-exporter:1.0.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: giropops
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 32111
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 10
+  conditions:
+  - lastTransitionTime: "2020-02-26T14:43:37Z"
+    lastUpdateTime: "2020-02-26T14:43:37Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  observedGeneration: 1
+  readyReplicas: 10
+  replicas: 10
+  updatedReplicas: 10
+
+vagrant@k8s-master:~$ kubectl rollout status deployment giropops-v2
+deployment "giropops-v2" successfully rolled out
+
+
 ```
