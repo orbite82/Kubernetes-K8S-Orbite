@@ -4338,6 +4338,32 @@ spec:
 status:
   phase: Pending
 
+vagrant@k8s-master:~$ kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
+primeiro-pv   1Gi        RWX            Retain           Available                                   16h
+
+vagrant@k8s-master:~$ kubectl describe pv primeiro-pv
+Name:            primeiro-pv
+Labels:          <none>
+Annotations:     <none>
+Finalizers:      [kubernetes.io/pv-protection]
+StorageClass:    
+Status:          Available
+Claim:           
+Reclaim Policy:  Retain
+Access Modes:    RWX
+VolumeMode:      Filesystem
+Capacity:        1Gi
+Node Affinity:   <none>
+Message:         
+Source:
+    Type:      NFS (an NFS mount that lasts the lifetime of a pod)
+    Server:    172.16.1.10
+    Path:      /opt/dados
+    ReadOnly:  false
+Events:        <none>
+
+
 
 
 ```
