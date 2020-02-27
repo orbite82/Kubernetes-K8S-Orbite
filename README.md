@@ -4681,4 +4681,217 @@ vagrant@k8s-master:~$ kubectl logs giropops-cron-1582828200-fz6d9
 Thu Feb 27 18:30:05 UTC 2020
 Bem Vindo ao Descomplicando Kubernetes - LinuxTips VAIIII :sleep 30
 
+vagrant@k8s-master:~$ kubectl delete cronjobs.batch giropops-cron
+cronjob.batch "giropops-cron" deleted
+
+```
+
+# Secrets
+
+```
+vagrant@k8s-master:~$ echo -n "orbitex " > secret.txt
+
+vagrant@k8s-master:~$ cat secret.txt 
+orbitex vagrant@k8s-master:~$ kubectl create secret generic my-secret --from-file=secret.txt
+secret/my-secret created
+
+vagrant@k8s-master:~$ kubectl get secret
+NAME                  TYPE                                  DATA   AGE
+default-token-t4hfb   kubernetes.io/service-account-token   3      22d
+my-secret             Opaque                                1      8s
+
+vagrant@k8s-master:~$ kubectl describe secrets my-secret
+Name:         my-secret
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+secret.txt:  8 bytes
+
+vagrant@k8s-master:~$ kubectl get secrets my-secret -o yaml
+apiVersion: v1
+data:
+  secret.txt: b3JiaXRleCA=
+kind: Secret
+metadata:
+  creationTimestamp: "2020-02-27T19:50:22Z"
+  name: my-secret
+  namespace: default
+  resourceVersion: "1685844"
+  selfLink: /api/v1/namespaces/default/secrets/my-secret
+  uid: 75fabd86-dc6e-4a83-863c-0228ec4208c9
+type: Opaque
+
+agrant@k8s-master:~$ kubectl get secrets my-secret -o yaml
+apiVersion: v1
+data:
+  secret.txt: b3JiaXRleCA=
+kind: Secret
+metadata:
+  creationTimestamp: "2020-02-27T19:50:22Z"
+  name: my-secret
+  namespace: default
+  resourceVersion: "1685844"
+  selfLink: /api/v1/namespaces/default/secrets/my-secret
+  uid: 75fabd86-dc6e-4a83-863c-0228ec4208c9
+type: Opaque
+vagrant@k8s-master:~$ echo 'b3JiaXRleCA' | base64 --decode
+orbitex base64: invalid input
+
+vagrant@k8s-master:~$ echo "b3JiaXRleCA=" | base64 --decode
+orbitex vagrant@k8s-master:~$ 
+
+vagrant@k8s-master:~$ vim pode-secret.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: teste-secret
+  namespace: default
+spec:
+  containers:
+  - image: busybox
+    name: busy
+    command:
+      - sleep
+      - "3600"
+    volumeMounts:
+    - mountPath: /tmp/giropops
+      name: my-volume-secret
+  volumes:
+  - name: my-volume-secret
+    secret:
+      secretName: my-secret
+
+vagrant@k8s-master:~$ kubectl create -f pode-secret.yaml
+pod/teste-secret created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME           READY   STATUS    RESTARTS   AGE
+teste-secret   1/1     Running   0          43s
+
+vagrant@k8s-master:~$ kubectl exec -ti teste-secret -- sh
+/ # ls
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
+/ # cd tmp/giropops/
+/tmp/giropops # ls
+secret.txt
+/tmp/giropops # cat secret.txt 
+orbitex /tmp/giropops # 
+
+vagrant@k8s-master:~$ kubectl delete pods teste-secret
+pod "teste-secret" deleted
+
+vagrant@k8s-master:~$ kubectl create secret generic my-literal-secret --from-literal user=orbitex --from-literal password=arthur
+secret/my-literal-secret created
+
+vagrant@k8s-master:~$ kubectl get secret
+NAME                  TYPE                                  DATA   AGE
+default-token-t4hfb   kubernetes.io/service-account-token   3      22d
+my-literal-secret     Opaque                                2      23s
+my-secret             Opaque                                1      29m
+
+vagrant@k8s-master:~$ kubectl describe secret my-literal-secret
+Name:         my-literal-secret
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+password:  6 bytes
+user:      7 bytes
+
+vagrant@k8s-master:~$ kubectl describe secrets my-literal-secret
+Name:         my-literal-secret
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+password:  6 bytes
+user:      7 bytes
+
+vagrant@k8s-master:~$ kubectl get secret my-literal-secret -o yaml
+apiVersion: v1
+data:
+  password: YXJ0aHVy
+  user: b3JiaXRleA==
+kind: Secret
+metadata:
+  creationTimestamp: "2020-02-27T20:19:15Z"
+  name: my-literal-secret
+  namespace: default
+  resourceVersion: "1690041"
+  selfLink: /api/v1/namespaces/default/secrets/my-literal-secret
+  uid: a4c8656a-db25-49d4-8903-b3fb81834f27
+type: Opaque
+
+vagrant@k8s-master:~$ echo 'YXJ0aHVy' | base64 --decode
+arthurvagrant@k8s-master:~$ echo 'b3JiaXRleA==' | base64 --decode
+orbitexvagrant@k8s-master:~$ 
+
+vagrant@k8s-master:~$ kubectl create -f pod-secret-env.yaml
+pod/teste-secret-env created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME               READY   STATUS    RESTARTS   AGE
+teste-secret-env   1/1     Running   0          22s
+
+vagrant@k8s-master:~$ kubectl exec -ti teste-secret-env -- sh
+/ # ls
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
+/ # set
+GIROPOPS_PORT='tcp://10.102.140.106:80'
+GIROPOPS_PORT_32111_TCP='tcp://10.102.140.106:32111'
+GIROPOPS_PORT_32111_TCP_ADDR='10.102.140.106'
+GIROPOPS_PORT_32111_TCP_PORT='32111'
+GIROPOPS_PORT_32111_TCP_PROTO='tcp'
+GIROPOPS_PORT_80_TCP='tcp://10.102.140.106:80'
+GIROPOPS_PORT_80_TCP_ADDR='10.102.140.106'
+GIROPOPS_PORT_80_TCP_PORT='80'
+GIROPOPS_PORT_80_TCP_PROTO='tcp'
+GIROPOPS_SERVICE_HOST='10.102.140.106'
+GIROPOPS_SERVICE_PORT='80'
+GIROPOPS_SERVICE_PORT_HTTP='80'
+GIROPOPS_SERVICE_PORT_PROMETHEUS='32111'
+HISTFILE='/root/.ash_history'
+HOME='/root'
+HOSTNAME='teste-secret-env'
+IFS=' 	
+'
+KUBERNETES_PORT='tcp://10.96.0.1:443'
+KUBERNETES_PORT_443_TCP='tcp://10.96.0.1:443'
+KUBERNETES_PORT_443_TCP_ADDR='10.96.0.1'
+KUBERNETES_PORT_443_TCP_PORT='443'
+KUBERNETES_PORT_443_TCP_PROTO='tcp'
+KUBERNETES_SERVICE_HOST='10.96.0.1'
+KUBERNETES_SERVICE_PORT='443'
+KUBERNETES_SERVICE_PORT_HTTPS='443'
+LINENO=''
+MEU_PASSWORD='arthur'
+MEU_USERNAME='orbitex'
+OPTIND='1'
+PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+PPID='0'
+PS1='\w \$ '
+PS2='> '
+PS4='+ '
+PWD='/'
+SHLVL='1'
+TERM='xterm'
+_='ls'
+/ # 
+
+
+```
 
