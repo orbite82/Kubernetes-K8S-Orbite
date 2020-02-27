@@ -4223,6 +4223,28 @@ teste1
 
 # Persistent Volume
 
+https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+
+* PVC é uma declaração de necessidade de armazenamento que pode em algum momento tornar-se disponível - como em vinculado a alguns reais PV.
+
+É um pouco como o conceito de programação assíncrona de um promessa. PVC promete que em algum momento"traduza" para o volume de armazenamento que seu aplicativo poderá usar e uma das características definidas como classe, tamanho e modo de acesso (ROX, RWO e RWX).
+
+Esta é uma maneira de abstrair pensar sobre umimplementação de armazenamento particular longe de seus pods / implantações. Seu aplicativo na maioria dos casos não precisa declarar "me dê armazenamento NFS do servidor X do tamanho Y"; é mais como "Eu preciso de armazenamento persistente de classe padrão e tamanho Y".
+
+Com isso, as implantações em diferentes clusters podemescolha diferentemente satisfazer essa necessidade. Pode-se vincular um dispositivo EBS, outro pode provisionar um GlusterFS, e seus principais manifestos ainda são os mesmos em ambos os casos.
+
+Além disso, você pode ter modelos de solicitação de volumedefinidos em sua implantação, de modo que cada pod receba um PVC refletivo criado automaticamente (isto é, suportando a definição de armazenamento independente de infraestrutura para um grupo de pods escalonáveis ​​em que cada um precisa de seu próprio armazenamento dedicado.
+
+* PVs são recursos no cluster. PVCs são solicitações para esses recursos e também atuam como verificações de declaração para o recurso.
+
+
+ 
+Portanto, um volume persistente (PV) é o volume "físico" na máquina host que armazena seus dados persistentes. Uma reivindicação de volume persistente (PVC) é um pedido para a plataforma criar um PV para você e anexar PVs aos seus pods por meio de um PVC.
+
+Algo parecido com
+
+`Pod -> PVC -> PV -> Host machine`
+
 ```
 vagrant@node-1:~$ sudo su -
 root@node-1:~# cd /va
@@ -4363,8 +4385,161 @@ Source:
     ReadOnly:  false
 Events:        <none>
 
+vagrant@k8s-master:~$ vim primeiro-pvc.yaml
 
+apiVersion: v1
+kind : PersistentVolumeClaim
+metadata:
+  name: primeiro-pvc
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 800Mi
 
+vagrant@k8s-master:~$ kubectl create -f primeiro-pvc.yaml
+persistentvolumeclaim/primeiro-pvc created
+
+vagrant@k8s-master:~$ kubectl get pvc
+NAME           STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+primeiro-pvc   Bound    primeiro-pv   1Gi        RWX                           95s
+
+vagrant@k8s-master:~$ kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   REASON   AGE
+primeiro-pv   1Gi        RWX            Retain           Bound    default/primeiro-pvc                           17h
+
+vagrant@k8s-master:~$ kubectl describe pvc primeiro-pvc
+Name:          primeiro-pvc
+Namespace:     default
+StorageClass:  
+Status:        Bound
+Volume:        primeiro-pv
+Labels:        <none>
+Annotations:   pv.kubernetes.io/bind-completed: yes
+               pv.kubernetes.io/bound-by-controller: yes
+Finalizers:    [kubernetes.io/pvc-protection]
+Capacity:      1Gi
+Access Modes:  RWX
+VolumeMode:    Filesystem
+Mounted By:    <none>
+Events:        <none>
+
+vagrant@k8s-master:~$ vim nfs-pv.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      run: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        volumeMounts:
+        - name: nfs-pv
+          mountPath: /giropops
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      volumes:
+      - name: nfs-pv
+        persistentVolumeClaim:
+          claimName: primeiro-pvc
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+
+vagrant@k8s-master:~$ kubectl create -f nfs-pv.yaml
+deployment.apps/nginx created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                     READY   STATUS    RESTARTS   AGE
+nginx-84844dfd49-qp96n   1/1     Running   0          114s
+
+vagrant@k8s-master:~$ kubectl get deployments
+NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+nginx   1/1     1            1           2m1s
+
+vagrant@k8s-master:~$ kubectl describe deployments. nginx
+Name:                   nginx
+Namespace:              default
+CreationTimestamp:      Thu, 27 Feb 2020 14:29:41 +0000
+Labels:                 run=nginx
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               run=nginx
+Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  1 max unavailable, 1 max surge
+Pod Template:
+  Labels:  run=nginx
+  Containers:
+   nginx:
+    Image:        nginx
+    Port:         <none>
+    Host Port:    <none>
+    Environment:  <none>
+    Mounts:
+      /giropops from nfs-pv (rw)
+  Volumes:
+   nfs-pv:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  primeiro-pvc
+    ReadOnly:   false
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   nginx-84844dfd49 (1/1 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  2m53s  deployment-controller  Scaled up replica set nginx-84844dfd49 to 1
+
+vagrant@k8s-master:~$ kubectl exec -ti nginx-84844dfd49-qp96n -- sh
+# ls
+bin  boot  dev	etc  giropops  home  lib  lib64  media	mnt  opt  proc	root  run  sbin  srv  sys  tmp	usr  var
+# bash 			
+root@nginx-84844dfd49-qp96n:/# cd giropops/
+root@nginx-84844dfd49-qp96n:/giropops# touch teste11
+root@nginx-84844dfd49-qp96n:/giropops# ls
+teste11
+root@nginx-84844dfd49-qp96n:/giropops# 
+
+vagrant@k8s-master:~$ cd /opt/dados/
+
+vagrant@k8s-master:/opt/dados$ ls
+teste11
+
+vagrant@k8s-master:/opt/dados$ kubectl get pods -o  wide
+NAME                     READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES
+nginx-84844dfd49-qp96n   1/1     Running   0          7m16s   192.168.247.1   node-2   <none>           <none>
 
 ```
+# CronJobs
 
+```
