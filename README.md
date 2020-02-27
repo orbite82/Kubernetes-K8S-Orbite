@@ -4543,3 +4543,142 @@ nginx-84844dfd49-qp96n   1/1     Running   0          7m16s   192.168.247.1   no
 # CronJobs
 
 ```
+vagrant@k8s-master:/$ kubectl edit pv primeiro-pv
+persistentvolume/primeiro-pv edited
+
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/bound-by-controller: "yes"
+  creationTimestamp: "2020-02-26T20:51:50Z"
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: primeiro-pv
+  resourceVersion: "1629878"
+  selfLink: /api/v1/persistentvolumes/primeiro-pv
+  uid: 3f7342f7-e00b-4741-b08d-04fbaaf5af3c
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: primeiro-pvc
+    namespace: default
+    resourceVersion: "1629876"
+    uid: 82fd6947-a1dc-467d-8a2c-d75ceb1c98e8
+  nfs:
+    path: /opt/dados
+    server: 172.16.1.10
+  persistentVolumeReclaimPolicy: Delete
+  volumeMode: Filesystem
+status:
+  phase: Bound
+
+vagrant@k8s-master:/$ kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   REASON   AGE
+primeiro-pv   1Gi        RWX            Delete           Bound    default/primeiro-pvc                           21h
+
+vagrant@k8s-master:~$ kubectl delete -f nfs-pv.yaml
+deployment.apps "nginx" deleted
+
+vagrant@k8s-master:~$ vim primeiro-cronjob.yaml
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: giropops-cron
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: giropops-cron
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; echo Bem Vindo ao Descomplicando Kubernetes - LinuxTips VAIIII :sleep 30
+          restartPolicy: OnFailure
+
+vagrant@k8s-master:~$ kubectl create -f primeiro-cronjob.yaml
+cronjob.batch/giropops-cron created
+
+vagrant@k8s-master:~$ kubectl get cronjobs.batch
+NAME            SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+giropops-cron   */1 * * * *   False     0        42s             78s
+
+vagrant@k8s-master:~$ kubectl describe cronjobs.batch giropops-cron
+Name:                          giropops-cron
+Namespace:                     default
+Labels:                        <none>
+Annotations:                   <none>
+Schedule:                      */1 * * * *
+Concurrency Policy:            Allow
+Suspend:                       False
+Successful Job History Limit:  3
+Failed Job History Limit:      1
+Starting Deadline Seconds:     <unset>
+Selector:                      <unset>
+Parallelism:                   <unset>
+Completions:                   <unset>
+Pod Template:
+  Labels:  <none>
+  Containers:
+   giropops-cron:
+    Image:      busybox
+    Port:       <none>
+    Host Port:  <none>
+    Args:
+      /bin/sh
+      -c
+      date; echo Bem Vindo ao Descomplicando Kubernetes - LinuxTips VAIIII :sleep 30
+    Environment:     <none>
+    Mounts:          <none>
+  Volumes:           <none>
+Last Schedule Time:  Thu, 27 Feb 2020 18:24:00 +0000
+Active Jobs:         <none>
+Events:
+  Type    Reason            Age   From                Message
+  ----    ------            ----  ----                -------
+  Normal  SuccessfulCreate  110s  cronjob-controller  Created job giropops-cron-1582827780
+  Normal  SawCompletedJob   100s  cronjob-controller  Saw completed job: giropops-cron-1582827780, status: Complete
+  Normal  SuccessfulCreate  50s   cronjob-controller  Created job giropops-cron-1582827840
+  Normal  SawCompletedJob   40s   cronjob-controller  Saw completed job: giropops-cron-1582827840, status: Complete
+
+vagrant@k8s-master:~$ kubectl get jobs
+NAME                       COMPLETIONS   DURATION   AGE
+giropops-cron-1582827780   1/1           7s         2m46s
+giropops-cron-1582827840   1/1           6s         106s
+giropops-cron-1582827900   1/1           5s         45s
+
+vagrant@k8s-master:~$ kubectl get jobs --watch
+NAME                       COMPLETIONS   DURATION   AGE
+giropops-cron-1582827840   1/1           6s         2m33s
+giropops-cron-1582827900   1/1           5s         92s
+giropops-cron-1582827960   1/1           5s         42s
+giropops-cron-1582828020   0/1                      0s
+giropops-cron-1582828020   0/1           0s         0s
+giropops-cron-1582828020   1/1           5s         5s
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                             READY   STATUS      RESTARTS   AGE
+giropops-cron-1582828200-fz6d9   0/1     Completed   0          2m16s
+giropops-cron-1582828260-vsg65   0/1     Completed   0          76s
+giropops-cron-1582828320-vz55z   0/1     Completed   0          16s
+
+vagrant@k8s-master:~$ kubectl logs giropops-cron-1582828200-fz6d9
+Thu Feb 27 18:30:05 UTC 2020
+Bem Vindo ao Descomplicando Kubernetes - LinuxTips VAIIII :sleep 30
+
+
