@@ -444,6 +444,7 @@ suas cargas de trabalho em escala.
 https://king.host/blog/2018/05/como-usar-kubernetes-na-pratica/
 
 ---
+---
 
 # Como usar Kubernetes: primeiro objeto da aplicação – POD
 
@@ -499,6 +500,8 @@ acontece que até o momento foi criado apenas o objeto POD, que é um dos objeto
 sendo assim, ele não tem recursos suficientes para informar o Kubernetes do status de processamento da aplicação. 
 Para que seja possível é necessário criarmos o objeto deployment, 
 que será responsável por atualizar o Kubernetes sobre as informações de processamento.
+
+---
 
 # O objeto Deployment
 
@@ -3083,6 +3086,9 @@ three-deployment-67b5675c9d   1         1         1       3m43s
 
 
 ```
+---
+---
+
 # Removendo dc e disk do Label
 
 ```
@@ -3124,6 +3130,8 @@ beta.kubernetes.io/os=linux
 kubernetes.io/arch=amd64
 
 ```
+---
+---
 
 # Replicaset
 
@@ -3262,6 +3270,9 @@ replica-set-primeiro-kbff6          1/1     Running   0          57m     Giropop
 three-deployment-67b5675c9d-pjlh9   1/1     Running   0          18h     
 
 ```
+---
+---
+
 # Removendo os Labs
 
 ```
@@ -3299,6 +3310,9 @@ vagrant@k8s-master:~$ kubectl delete -f three-deployment.yaml
 deployment.apps "three-deployment" deleted
 
 ```
+---
+---
+
 # Daemonset
 
 ```
@@ -3859,6 +3873,9 @@ Pod Template:
 
 
 ```
+---
+---
+
 # Rollouts e Rollbacks
 
 ```
@@ -4540,6 +4557,9 @@ NAME                     READY   STATUS    RESTARTS   AGE     IP              NO
 nginx-84844dfd49-qp96n   1/1     Running   0          7m16s   192.168.247.1   node-2   <none>           <none>
 
 ```
+---
+---
+
 # CronJobs
 
 ```
@@ -4685,7 +4705,8 @@ vagrant@k8s-master:~$ kubectl delete cronjobs.batch giropops-cron
 cronjob.batch "giropops-cron" deleted
 
 ```
-
+---
+---
 # Secrets
 
 ```
@@ -4892,6 +4913,329 @@ TERM='xterm'
 _='ls'
 / # 
 
+```
+---
+---
+# Configmaps
 
 ```
+vagrant@k8s-master:~$ kubectl delete pods teste-secret-env
+pod "teste-secret-env" deleted
 
+vagrant@k8s-master:~$ echo amarela > frutas/banana
+vagrant@k8s-master:~$ echo vermelho > frutas/morango
+vagrant@k8s-master:~$ echo verde > frutas/limao
+vagrant@k8s-master:~$ echo "verde e vermelho" > frutas/melancia
+vagrant@k8s-master:~$ echo kiwi > predileta
+vagrant@k8s-master:~$ ls frutas
+banana  limao  melancia  morango
+
+vagrant@k8s-master:~$ ls predileta
+predileta
+
+vagrant@k8s-master:~$ kubectl create configmap cores-frutas --from-literal uva=roxa --from-file=predileta --from-file=frutas/
+configmap/cores-frutas created
+
+vagrant@k8s-master:~$ kubectl get configmap
+NAME           DATA   AGE
+cores-frutas   6      43s
+
+vagrant@k8s-master:~$ kubectl describe configmap
+Name:         cores-frutas
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Data
+====
+uva:
+----
+roxa
+banana:
+----
+amarela
+
+limao:
+----
+verde
+
+melancia:
+----
+verde e vermelho
+
+morango:
+----
+vermelho
+
+predileta:
+----
+kiwi
+
+Events:  <none>
+
+vagrant@k8s-master:~$ vim pod-configmap.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-configmap
+  namespace: default
+spec:
+  containers:
+  - image: busybox
+    name: busy-configmap
+    command:
+      - sleep
+      - "3600"
+    env:
+    - name: frutas
+      valueFrom:
+        configMapKeyRef:
+          name: cores-frutas
+          key: predileta
+
+vagrant@k8s-master:~$ kubectl create -f pod-configmap.yaml
+pod/busybox-configmap created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                READY   STATUS    RESTARTS   AGE
+busybox-configmap   1/1     Running   0          9m28s
+vagrant@k8s-master:~$ kubectl describe pods busybox-configmap
+Name:         busybox-configmap
+Namespace:    default
+Priority:     0
+Node:         node-1/172.16.1.11
+Start Time:   Fri, 28 Feb 2020 13:42:41 +0000
+Labels:       <none>
+Annotations:  cni.projectcalico.org/podIP: 192.168.84.177/32
+Status:       Running
+IP:           192.168.84.177
+IPs:
+  IP:  192.168.84.177
+Containers:
+  busy-configmap:
+    Container ID:  docker://5ff5f46350eac49537f49cc370d76304d9eeffeca6051eca533dfd6fb801e0cb
+    Image:         busybox
+    Image ID:      docker-pullable://busybox@sha256:6915be4043561d64e0ab0f8f098dc2ac48e077fe23f488ac24b665166898115a
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sleep
+      3600
+    State:          Running
+      Started:      Fri, 28 Feb 2020 13:42:45 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:
+      frutas:  <set to the key 'predileta' of config map 'cores-frutas'>  Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-t4hfb (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  default-token-t4hfb:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-t4hfb
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age        From               Message
+  ----    ------     ----       ----               -------
+  Normal  Scheduled  <unknown>  default-scheduler  Successfully assigned default/busybox-configmap to node-1
+  Normal  Pulling    9m54s      kubelet, node-1    Pulling image "busybox"
+  Normal  Pulled     9m52s      kubelet, node-1    Successfully pulled image "busybox"
+  Normal  Created    9m51s      kubelet, node-1    Created container busy-configmap
+  Normal  Started    9m51s      kubelet, node-1    Started container busy-configmap
+
+vagrant@k8s-master:~$ kubectl exec -ti busybox-configmap -- sh
+/ # ls
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
+/ # set
+GIROPOPS_PORT='tcp://10.102.140.106:80'
+GIROPOPS_PORT_32111_TCP='tcp://10.102.140.106:32111'
+GIROPOPS_PORT_32111_TCP_ADDR='10.102.140.106'
+GIROPOPS_PORT_32111_TCP_PORT='32111'
+GIROPOPS_PORT_32111_TCP_PROTO='tcp'
+GIROPOPS_PORT_80_TCP='tcp://10.102.140.106:80'
+GIROPOPS_PORT_80_TCP_ADDR='10.102.140.106'
+GIROPOPS_PORT_80_TCP_PORT='80'
+GIROPOPS_PORT_80_TCP_PROTO='tcp'
+GIROPOPS_SERVICE_HOST='10.102.140.106'
+GIROPOPS_SERVICE_PORT='80'
+GIROPOPS_SERVICE_PORT_HTTP='80'
+GIROPOPS_SERVICE_PORT_PROMETHEUS='32111'
+HISTFILE='/root/.ash_history'
+HOME='/root'
+HOSTNAME='busybox-configmap'
+IFS=' 	
+'
+KUBERNETES_PORT='tcp://10.96.0.1:443'
+KUBERNETES_PORT_443_TCP='tcp://10.96.0.1:443'
+KUBERNETES_PORT_443_TCP_ADDR='10.96.0.1'
+KUBERNETES_PORT_443_TCP_PORT='443'
+KUBERNETES_PORT_443_TCP_PROTO='tcp'
+KUBERNETES_SERVICE_HOST='10.96.0.1'
+KUBERNETES_SERVICE_PORT='443'
+KUBERNETES_SERVICE_PORT_HTTPS='443'
+LINENO=''
+OPTIND='1'
+PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+PPID='0'
+PS1='\w \$ '
+PS2='> '
+PS4='+ '
+PWD='/'
+SHLVL='1'
+TERM='xterm'
+_='ls'
+frutas='kiwi
+'
+/ # 
+
+vagrant@k8s-master:~$ kubectl delete -f pod-configmap.yaml
+pod "busybox-configmap" deleted
+
+vagrant@k8s-master:~$ vim pod-configmap.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-configmap
+  namespace: default
+spec:
+  containers:
+  - image: busybox
+    name: busy-configmap
+    command:
+      - sleep
+      - "3600"
+    envFrom:
+    - configMapRef:
+        name: cores-frutas
+
+vagrant@k8s-master:~$ kubectl create -f pod-configmap.yaml
+pod/busybox-configmap created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                READY   STATUS    RESTARTS   AGE
+busybox-configmap   1/1     Running   0          8s
+
+vagrant@k8s-master:~$ kubectl exec -ti busybox-configmap -- sh
+/ # ls
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
+/ # set
+GIROPOPS_PORT='tcp://10.102.140.106:80'
+GIROPOPS_PORT_32111_TCP='tcp://10.102.140.106:32111'
+GIROPOPS_PORT_32111_TCP_ADDR='10.102.140.106'
+GIROPOPS_PORT_32111_TCP_PORT='32111'
+GIROPOPS_PORT_32111_TCP_PROTO='tcp'
+GIROPOPS_PORT_80_TCP='tcp://10.102.140.106:80'
+GIROPOPS_PORT_80_TCP_ADDR='10.102.140.106'
+GIROPOPS_PORT_80_TCP_PORT='80'
+GIROPOPS_PORT_80_TCP_PROTO='tcp'
+GIROPOPS_SERVICE_HOST='10.102.140.106'
+GIROPOPS_SERVICE_PORT='80'
+GIROPOPS_SERVICE_PORT_HTTP='80'
+GIROPOPS_SERVICE_PORT_PROMETHEUS='32111'
+HISTFILE='/root/.ash_history'
+HOME='/root'
+HOSTNAME='busybox-configmap'
+IFS=' 	
+'
+KUBERNETES_PORT='tcp://10.96.0.1:443'
+KUBERNETES_PORT_443_TCP='tcp://10.96.0.1:443'
+KUBERNETES_PORT_443_TCP_ADDR='10.96.0.1'
+KUBERNETES_PORT_443_TCP_PORT='443'
+KUBERNETES_PORT_443_TCP_PROTO='tcp'
+KUBERNETES_SERVICE_HOST='10.96.0.1'
+KUBERNETES_SERVICE_PORT='443'
+KUBERNETES_SERVICE_PORT_HTTPS='443'
+LINENO=''
+OPTIND='1'
+PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+PPID='0'
+PS1='\w \$ '
+PS2='> '
+PS4='+ '
+PWD='/'
+SHLVL='1'
+TERM='xterm'
+_='ls'
+banana='amarela
+'
+limao='verde
+'
+melancia='verde e vermelho
+'
+morango='vermelho
+'
+predileta='kiwi
+'
+uva='roxa'
+/ # 
+
+vagrant@k8s-master:~$ vim pod-configmap-file.yaml
+
+piVersion: v1
+kind: Pod
+metadata:
+  name: busybox-configmap-file
+  namespace: default
+spec:
+  containers:
+  - image: busybox
+    name: busy-configmap
+    command:
+      - sleep
+      - "3600"
+    volumeMounts:
+    - name: meu-configmap-vol
+      mountPath: /etc/frutas
+  volumes:
+  - name: meu-configmap-vol
+    configMap:
+      name: cores-frutas
+
+
+vagrant@k8s-master:~$ kubectl create -f pod-configmap-file.yaml
+pod/busybox-configmap-file created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME                     READY   STATUS    RESTARTS   AGE
+busybox-configmap-file   1/1     Running   0          44s
+
+vagrant@k8s-master:~$ kubectl exec -ti busybox-configmap-file -- sh
+/ # ls
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
+/ # cd /etc/frutas/
+/etc/frutas # ls
+banana     limao      melancia   morango    predileta  uva
+/etc/frutas # 
+/etc/frutas # ls -lha
+total 12K    
+drwxrwxrwx    3 root     root        4.0K Feb 28 15:30 .
+drwxr-xr-x    1 root     root        4.0K Feb 28 15:30 ..
+drwxr-xr-x    2 root     root        4.0K Feb 28 15:30 ..2020_02_28_15_30_08.338479915
+lrwxrwxrwx    1 root     root          31 Feb 28 15:30 ..data -> ..2020_02_28_15_30_08.338479915
+lrwxrwxrwx    1 root     root          13 Feb 28 15:30 banana -> ..data/banana
+lrwxrwxrwx    1 root     root          12 Feb 28 15:30 limao -> ..data/limao
+lrwxrwxrwx    1 root     root          15 Feb 28 15:30 melancia -> ..data/melancia
+lrwxrwxrwx    1 root     root          14 Feb 28 15:30 morango -> ..data/morango
+lrwxrwxrwx    1 root     root          16 Feb 28 15:30 predileta -> ..data/predileta
+lrwxrwxrwx    1 root     root          10 Feb 28 15:30 uva -> ..data/uva
+/etc/frutas # 
+
+```
+---
+---
+
+# Initcontainer
+
+```
