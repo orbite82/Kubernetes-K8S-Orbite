@@ -5239,3 +5239,70 @@ lrwxrwxrwx    1 root     root          10 Feb 28 15:30 uva -> ..data/uva
 # Initcontainer
 
 ```
+vagrant@k8s-master:~$ vim nginx-initcontainer.yaml 
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: workdir
+      mountPath: /usr/share/nginx/html
+  initContainers:
+  - name: install
+    image: busybox
+    command:
+    - wget
+    - "-O"
+    - "/work-dir/index.html"
+    - http://kubernetes.io
+    volumeMounts:
+    - name: workdir
+      mountPath: "/work-dir"
+  dnsPolicy: Default
+  volumes:
+  - name: workdir
+    emptyDir: {}
+
+vagrant@k8s-master:~$ kubectl create -f nginx-initcontainer.yaml
+pod/init-demo created
+
+vagrant@k8s-master:~$ kubectl get pods
+NAME        READY   STATUS    RESTARTS   AGE
+init-demo   1/1     Running   0          2m39s
+
+vagrant@k8s-master:~$ kubectl exec -ti init-demo -- sh
+# ls
+bin  boot  dev	etc  home  lib	lib64  media  mnt  opt	proc  root  run  sbin  srv  sys  tmp  usr  var
+# cd /usr/share	
+# ls
+X11	    base-passwd      common-licenses  dict	dpkg	    gcc-8  java      lintian  menu   pam	  pixmaps   sensible-utils  xml
+adduser     bash-completion  debconf	      doc	fontconfig  gdb    keyrings  locale   misc   pam-configs  polkit-1  tabset	    zoneinfo
+base-files  bug		     debianutils      doc-base	fonts	    info   libc-bin  man      nginx  perl5	  readline  terminfo
+# cd nginx
+# ls
+html
+# cd html
+# ls
+index.html
+# cat index.html
+
+<!doctype html><html id=home lang=en><head><meta name=generator content="Hugo 0.59.1"><script async src="https://www.googletagmanager.com/gtag/js?id=UA-36037335-10"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());gtag('config','UA-36037335-10');</script><meta charset=utf-8><title>Production-Grade Container Orchestration - Kubernetes</title><meta name=viewport content="width=device-width,initial-scale=1"><meta name=theme-color content="#326ce5"><link rel="shortcut icon" type=image/png href=/images/favicon.png><link rel=stylesheet href=/css/style.e78f6b6cb395bf1ebff750caf8b497ce6f23c485f8b6d2d65b102fd3745c0556.css integrity="sha256-549rbLOVvx6/91DK&#43;LSXzm8jxIX4ttLWWxAv03RcBVY="><link rel=stylesheet href=/css/base_fonts.css><link rel=stylesheet href=/css/jquery-ui.min.css><link rel=stylesheet href=/css/callouts.css><link rel=stylesheet href=/css/custom-jekyll/tags.css><meta name=description content="Kubernetes (K8s) is an open-source system for automating deployment, scaling, and management of containerized applications. It groups containers that make up an application into logical units for easy management and discovery. Kubernetes builds upon 15 years of experience of running production workloads at Google, combined with best-of-breed ideas and practices from the community.
+   Planet Scale Designed on the same principles that allows Google to run billions of containers a week, Kubernetes can scale without increasing your ops team."><meta property="og:description" content="Kubernetes (K8s) is an open-source system for automating deployment, scaling, and management of containerized applications. It groups containers that make up an application into logical units for easy management and discovery. Kubernetes builds upon 15 years of experience of running production workloads at Google, combined with best-of-breed ideas and practices from the community.
+   Planet Scale Designed on the same principles that allows Google to run billions of containers a week, Kubernetes can scale without increasing your ops team."><meta name=twitter:description content="Kubernetes (K8s) is an open-source system for automating deployment, scaling, and management of containerized applications. It groups containers that make up an application into logical units for easy management and discovery. Kubernetes builds upon 15 years of experience of running production workloads at Google, combined with best-of-breed ideas and practices from the community.
+   Planet Scale Designed on the same principles that allows Google to run billions of containers a week, Kubernetes can scale without increasing your ops team."><meta property="og:url" content="https://kubernetes.io/">
+
+```
+---
+---
+
+# RBAC
+
+```
