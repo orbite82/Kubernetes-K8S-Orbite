@@ -5306,3 +5306,134 @@ gtag('js',new Date());gtag('config','UA-36037335-10');</script><meta charset=utf
 # RBAC
 
 ```
+vagrant@k8s-master:~$ kubectl create serviceaccount orbite
+serviceaccount/orbite created
+
+vagrant@k8s-master:~$ kubectl get serviceaccount
+NAME      SECRETS   AGE
+default   1         34d
+orbite    1         13s
+
+vagrant@k8s-master:~$ kubectl describe serviceaccount orbite
+Name:                orbite
+Namespace:           default
+Labels:              <none>
+Annotations:         <none>
+Image pull secrets:  <none>
+Mountable secrets:   orbite-token-9mnlj
+Tokens:              orbite-token-9mnlj
+Events:              <none>
+
+vagrant@k8s-master:~$ kubectl get clusterrole
+NAME                                                                   AGE
+admin                                                                  34d
+calico-kube-controllers                                                34d
+calico-node                                                            34d
+cluster-admin                                                          34d
+edit                                                                   34d
+system:aggregate-to-admin                                              34d
+system:aggregate-to-edit                                               34d
+system:aggregate-to-view                                               34d
+system:auth-delegator                                                  34d
+system:basic-user                                                      34d
+... ect ....
+
+vagrant@k8s-master:~$ kubectl describe clusterrole cluster-admin 
+Name:         cluster-admin
+Labels:       kubernetes.io/bootstrapping=rbac-defaults
+Annotations:  rbac.authorization.kubernetes.io/autoupdate: true
+PolicyRule:
+  Resources  Non-Resource URLs  Resource Names  Verbs
+  ---------  -----------------  --------------  -----
+  *.*        []                 []              [*]
+             [*]                []              [*]
+
+vagrant@k8s-master:~$ kubectl create clusterrolebinding toskeira --serviceaccount=default:orbite --clusterrole=cluster-admin
+clusterrolebinding.rbac.authorization.k8s.io/toskeira created
+
+vagrant@k8s-master:~$ kubectl get clusterrolebindings.rbac.authorization.k8s.io
+NAME                                                   AGE
+calico-kube-controllers                                34d
+calico-node                                            34d
+cluster-admin                                          34d
+kubeadm:kubelet-bootstrap                              34d
+kubeadm:node-autoapprove-bootstrap                     34d
+kubeadm:node-autoapprove-certificate-rotation          34d
+kubeadm:node-proxier                                   34d
+..... etc...
+
+system:public-info-viewer                              34d
+system:volume-scheduler                                34d
+toskeira                                               64s
+
+vagrant@k8s-master:~$ kubectl describe clusterrolebindings.rbac.authorization.k8s.io toskeira
+Name:         toskeira
+Labels:       <none>
+Annotations:  <none>
+Role:
+  Kind:  ClusterRole
+  Name:  cluster-admin
+Subjects:
+  Kind            Name    Namespace
+  ----            ----    ---------
+  ServiceAccount  orbite  default
+
+vagrant@k8s-master:~$ vim admin-user.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kube-system
+
+
+vagrant@k8s-master:~$ kubectl create -f admin-user.yaml
+serviceaccount/admin-user created
+
+vagrant@k8s-master:~$ kubectl get service
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                        AGE
+giropops     NodePort    10.102.140.106   <none>        80:32222/TCP,32111:32111/TCP   13d
+kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP                        34d
+
+vagrant@k8s-master:~$ kubectl get service -n kube-system
+NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
+kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   34d
+
+vagrant@k8s-master:~$ kubectl get serviceaccounts -n kube-system
+NAME                                 SECRETS   AGE
+admin-user                           1         2m
+attachdetach-controller              1         34d
+bootstrap-signer                     1         34d
+calico-kube-controllers              1         34d
+calico-node                          1         34d
+certificate-controller               1         34d
+clusterrole-aggregation-controller   1         34d
+coredns                              1         34d
+cronjob-controller                   1         34d
+daemon-set-controller                1         34d
+default                              1         34d
+deployment-controller                1         34d
+disruption-controller                1         34d
+endpoint-controller                  1         34d
+expand-controller                    1         34d
+generic-garbage-collector            1         34d
+horizontal-pod-autoscaler            1         34d
+job-controller                       1         34d
+kube-proxy                           1         34d
+namespace-controller                 1         34d
+node-controller                      1         34d
+persistent-volume-binder             1         34d
+pod-garbage-collector                1         34d
+pv-protection-controller             1         34d
+pvc-protection-controller            1         34d
+replicaset-controller                1         34d
+replication-controller               1         34d
+resourcequota-controller             1         34d
+service-account-controller           1         34d
+service-controller                   1         34d
+statefulset-controller               1         34d
+token-cleaner                        1         34d
+ttl-controller                       1         34d
+
+
+
