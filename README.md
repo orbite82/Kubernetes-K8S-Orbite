@@ -5435,5 +5435,148 @@ statefulset-controller               1         34d
 token-cleaner                        1         34d
 ttl-controller                       1         34d
 
+vagrant@k8s-master:~$ vim admin-cluster-role-binding.yaml
+
+apiVersion: rbac.authorization.k8.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kube-system
+
+  vagrant@k8s-master:~$ kubectl create -f admin-cluster-role-binding.yaml
+clusterrolebinding.rbac.authorization.k8s.io/admin-user created
+
+vagrant@k8s-master:~$ kubectl describe clusterrolebindings.rbac.authorization.k8s.io admin-user
+Name:         admin-user
+Labels:       <none>
+Annotations:  <none>
+Role:
+  Kind:  ClusterRole
+  Name:  cluster-admin
+Subjects:
+  Kind            Name        Namespace
+  ----            ----        ---------
+  ServiceAccount  admin-user  kube-system
+
+```
+---
+---
+
+# Helm
+
+```
+vagrant@k8s-master:~$ wget https://storage.googleapis.com/kubernetes-helm/helm-v2.12.3-linux-amd64.tar.gz
+--2020-03-10 20:14:01--  https://storage.googleapis.com/kubernetes-helm/helm-v2.12.3-linux-amd64.tar.gz
+Resolving storage.googleapis.com (storage.googleapis.com)... 172.217.172.208, 2800:3f0:4001:81c::2010
+Connecting to storage.googleapis.com (storage.googleapis.com)|172.217.172.208|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 22722816 (22M) [application/x-tar]
+Saving to: 'helm-v2.12.3-linux-amd64.tar.gz'
+
+helm-v2.12.3-linux-amd64.tar.gz             100%[========================================================================================>]  21.67M  4.90MB/s    in 4.4s    
+
+2020-03-10 20:14:06 (4.90 MB/s) - 'helm-v2.12.3-linux-amd64.tar.gz' saved [22722816/22722816]
+
+vagrant@k8s-master:~$ sudo tar -vxzf helm-v2.12.3-linux-amd64.tar.gz
+linux-amd64/
+linux-amd64/LICENSE
+linux-amd64/helm
+linux-amd64/tiller
+linux-amd64/README.md
+
+vagrant@k8s-master:~/linux-amd64$ mv helm /usr/local/bin/
+
+vagrant@k8s-master:~/linux-amd64$ sudo mv tiller /usr/local/bin/
+
+vagrant@k8s-master:/$ curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  7150  100  7150    0     0  20519      0 --:--:-- --:--:-- --:--:-- 20545
+Helm v2.16.3 is available. Changing from version v2.12.3.
+Downloading https://get.helm.sh/helm-v2.16.3-linux-amd64.tar.gz
+Preparing to install helm and tiller into /usr/local/bin
+helm installed into /usr/local/bin/helm
+tiller installed into /usr/local/bin/tiller
+Run 'helm init' to configure helm.
+vagrant@k8s-master:/$ helm init --history-max 200
+$HELM_HOME has been configured at /home/vagrant/.helm.
+
+Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.
+
+Please note: by default, Tiller is deployed with an insecure 'allow unauthenticated users' policy.
+To prevent this, run `helm init` with the --tiller-tls-verify flag.
+For more information on securing your installation see: https://docs.helm.sh/using_helm/#securing-your-helm-installation
+
+vagrant@k8s-master:/$ helm init
+$HELM_HOME has been configured at /home/vagrant/.helm.
+Warning: Tiller is already installed in the cluster.
+(Use --client-only to suppress this message, or --upgrade to upgrade Tiller to the current version.)
+
+vagrant@k8s-master:/$ helm version
+Client: &version.Version{SemVer:"v2.16.3", GitCommit:"1ee0254c86d4ed6887327dabed7aa7da29d7eb0d", GitTreeState:"clean"}
+Server: &version.Version{SemVer:"v2.16.3", GitCommit:"1ee0254c86d4ed6887327dabed7aa7da29d7eb0d", GitTreeState:"clean"}
+
+vagrant@k8s-master:/$ helm init --canary-image --upgrade
+$HELM_HOME has been configured at /home/vagrant/.helm.
+
+Tiller (the Helm server-side component) has been updated to gcr.io/kubernetes-helm/tiller:canary .
+
+vagrant@k8s-master:/$ sudo apt-get upgrade helm
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+E: Unable to locate package helm
+
+```
+
+```
+vagrant@k8s-master:/$ kubectl create serviceaccount --namespace=kube-system tiller
+serviceaccount/tiller created
+
+vagrant@k8s-master:/$ kubectl create clusterrolebinding tiller-cluster-role --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+clusterrolebinding.rbac.authorization.k8s.io/tiller-cluster-role created
+
+vagrant@k8s-master:/$ kubectl get clusterrolebindings.rbac.authorization.k8s.io
+NAME                                                   AGE
+admin-user                                             44m
+calico-kube-controllers                                34d
+calico-node                                            34d
+cluster-admin                                          34d
+
+..... etc...
+tiller-cluster-role                                    74s
+toskeira                                               104m
+
+vagrant@k8s-master:/$ kubectl patch deployments -n kube-system tiller-deploy -p '{"spec":{"template":{"apec":{"serviceAccount":"tiller"}}}}'
+deployment.apps/tiller-deploy patched (no change)
+
+vagrant@k8s-master:/$ helm list
+
+vagrant@k8s-master:/$ helm search grafana
+NAME          	CHART VERSION	APP VERSION	DESCRIPTION                                                 
+stable/grafana	5.0.5        	6.6.2      	The leading tool for querying and visualizing time series...
+
+vagrant@k8s-master:/$ helm search nginx
+NAME                       	CHART VERSION	APP VERSION	DESCRIPTION                                                 
+stable/nginx-ingress       	1.33.5       	0.30.0     	An nginx Ingress controller that uses ConfigMap to store ...
+stable/nginx-ldapauth-proxy	0.1.3        	1.13.5     	nginx proxy with ldapauth                                   
+stable/nginx-lego          	0.3.1        	           	Chart for nginx-ingress-controller and kube-lego            
+stable/gcloud-endpoints    	0.1.2        	1          	DEPRECATED Develop, deploy, protect and monitor your APIs...
+
+
+
+
+
+
+
+
+
 
 
