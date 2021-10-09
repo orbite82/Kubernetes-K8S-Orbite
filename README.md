@@ -439,7 +439,7 @@ suas cargas de trabalho em escala.
 ---
 ---
 
-# Detalhando mais sobre a estrutua do Kubernetes
+# Detalhando mais sobre a estrutura do Kubernetes
 
 https://king.host/blog/2018/05/como-usar-kubernetes-na-pratica/
 
